@@ -97,24 +97,15 @@ trainer=Trainer(
     data_collator=data_collator,
     compute_metrics=computer_metrics,
 )
-trainer.train()
+training_metrics= trainer.train()
 metrics= trainer.evaluate()
-
+print("The trainig metrics", training_metrics.metrics)
 print("The metrics\n",metrics)
 model.save_pretrained("./Test_model")
 tokenizer.save_pretrained("./Test_model")
-#We will now put a text to test
-"""
-device=torch.device(
-    "mps" if torch.backends.mps.is_available() else "cpu"
-)
-
-inputs= tokenizer(text_test, return_tensors="pt",truncation=True, max_length=128)
-
-with torch.no_grad():
-    logits=model(**inputs).logits
-    
-predicted_class_id = logits.argmax().item()
-model.config.id2label[predicted_class_id]
+""" 
+Things to note about finetuning the model
+At 1000 rows it take about 40 second of training
+At 2000 rows it was about 2 minutes
 
 """
