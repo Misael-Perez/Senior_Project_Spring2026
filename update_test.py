@@ -13,34 +13,29 @@ This file will be an updated version of the news_test.py. Only the important par
 
 
 """
+#Start of the preprocessing
 TrueData= pd.read_csv("True.csv")
 FakeData=pd.read_csv("Fake.csv")
 TrueData= TrueData.dropna()
 FakeData= FakeData.dropna()
 TrueData["label"]=True
 FakeData["label"]=False
-#If you want to save some texts for testing, put the code below
-text_test= TrueData["text"].iloc[0]
-#end
+
 #Merge
 officialTable= pd.concat([TrueData,FakeData])
 officialTable=officialTable.reset_index(drop=True)
 #We will shuffle the data and create separate dataframes
 shuffled= officialTable.sample(frac=1).reset_index(drop=True)
 two_tables= np.array_split(shuffled,3)
-train_data= two_tables[0]
-eval_data=two_tables[1]
-test_data= two_tables[2]
+train_data= pd.DataFrame(two_tables[0],columns=["title","text","subject","date","label"])
+eval_data= pd.DataFrame(two_tables[1],columns=["title","text","subject","date","label"])
+test_data= pd.DataFrame(two_tables[2],columns=["title","text","subject","date","label"])
 
 train_data= train_data.reset_index(drop=True)
 eval_data= eval_data.reset_index(drop=True)
 test_data=test_data.reset_index(drop=True)
 
 #"title" "date" "subject"
-train_data.drop(columns=["subject"],inplace=True)
-eval_data.drop(columns=["subject"],inplace=True)
-test_data.drop(columns=["subject"],inplace=True)
-
 #Let's make the true and false numerical for the model
 train_data["label"]= train_data["label"].astype(int)
 eval_data["label"]= eval_data["label"].astype(int)
@@ -55,18 +50,18 @@ def preprocess_function(examples):
     return tokenizer(examples["text"], examples["title"], truncation=True, max_length=512)
 
 #Let's limit the number of rows. Might increase
-train_data= train_data[:3000]
-eval_data = eval_data[:3000]
-test_data = test_data[:3000]
+#train_data= train_data[:3000]
+#eval_data = eval_data[:3000]
+
 #There is a problem, the model and the tokens can only be used as a hugging face dataset
 #let's convert it.
 train_data= Dataset.from_pandas(train_data)
 eval_data= Dataset.from_pandas(eval_data)
-test_data= Dataset.from_pandas(test_data)
+
 #tokenize every text for both datasets
 train_token=train_data.map(preprocess_function, batched=True)
 eval_token= eval_data.map(preprocess_function, batched=True)
-test_token= test_data.map(preprocess_function, batched=True)
+
 #this is like a auto detect that will detect the largest length needed and apply it.
 # This is not needed no more data_collator= DataCollatorWithPadding(tokenizer=tokenizer)
 #The code below will allow us to view the metrics of the model
@@ -111,7 +106,45 @@ print("The trainig metrics", training_metrics.metrics)
 print("The metrics\n",metrics)
 model.save_pretrained("./Test_Model")
 tokenizer.save_pretrained("./Test_Model")
+#This section is dedicated to train the our own version of the model
 
+Trained_model= AutoModelForSequenceClassification("./Test_Model")
+New_tokenizer = AutoTokenizer("./Test_Model")
+#New function for the new tokenizer
+def New_preprocess_function(examples):
+    return New_tokenizer(examples["text"], examples["title"], truncation=True, max_length=512)
+#Turn the test_data into dataset
+test_data= Dataset.from_pandas(test_data)
+#Use our new version of the tokenizer to tokenize the test_data
+test_token= test_data.map(New_preprocess_function, batched=True)
+#Our training arguments
+training_args= TrainingArguments(
+    output_dir="Model",
+    learning_rate=2e-5,
+    per_device_train_batch_size=16,
+    gradient_accumulation_steps=62,
+    per_device_eval_batch_size=16,
+    num_train_epochs=3,
+    weight_decay=0.01,
+    eval_strategy="epoch",
+    save_strategy="epoch",
+    load_best_model_at_end=True,
+)
+trainer=Trainer(
+    model=Trained_model,
+    args=training_args,
+    train_dataset=test_token,
+    eval_dataset=test_token,
+    processing_class=New_tokenizer,
+    compute_metrics=computer_metrics,
+)
+training_metrics= trainer.train()
+metrics= trainer.evaluate()
+print("The trainig metrics", training_metrics.metrics)
+print("The metrics\n",metrics)
+model.save_pretrained("./Model")
+tokenizer.save_pretrained("./Model")
+#We are officially done with the original training and training for the finetuned model
 """ 
 Things to note about finetuning the model
 At 1000 rows it take about 40 second of training
