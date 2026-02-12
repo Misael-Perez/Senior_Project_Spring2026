@@ -13,33 +13,10 @@ This file will be an updated version of the news_test.py. Only the important par
 
 
 """
-#Start of the preprocessing
-TrueData= pd.read_csv("True.csv")
-FakeData=pd.read_csv("Fake.csv")
-TrueData= TrueData.dropna()
-FakeData= FakeData.dropna()
-TrueData["label"]=True
-FakeData["label"]=False
+#Let's load our new datasets for the training
+train_data= pd.read_csv("train.csv")
+eval_data=pd.read_csv("eval.csv")
 
-#Merge
-officialTable= pd.concat([TrueData,FakeData])
-officialTable=officialTable.reset_index(drop=True)
-#We will shuffle the data and create separate dataframes
-shuffled= officialTable.sample(frac=1).reset_index(drop=True)
-two_tables= np.array_split(shuffled,3)
-train_data= pd.DataFrame(two_tables[0],columns=["title","text","subject","date","label"])
-eval_data= pd.DataFrame(two_tables[1],columns=["title","text","subject","date","label"])
-test_data= pd.DataFrame(two_tables[2],columns=["title","text","subject","date","label"])
-
-train_data= train_data.reset_index(drop=True)
-eval_data= eval_data.reset_index(drop=True)
-test_data=test_data.reset_index(drop=True)
-
-#"title" "date" "subject"
-#Let's make the true and false numerical for the model
-train_data["label"]= train_data["label"].astype(int)
-eval_data["label"]= eval_data["label"].astype(int)
-test_data["label"]= test_data["label"].astype(int)
 
 #We want to create tokens for our text
 tokenizer= AutoTokenizer.from_pretrained("distilbert-base-uncased")
@@ -106,45 +83,8 @@ print("The trainig metrics", training_metrics.metrics)
 print("The metrics\n",metrics)
 model.save_pretrained("./Test_Model")
 tokenizer.save_pretrained("./Test_Model")
-#This section is dedicated to train the our own version of the model
 
-Trained_model= AutoModelForSequenceClassification("./Test_Model")
-New_tokenizer = AutoTokenizer("./Test_Model")
-#New function for the new tokenizer
-def New_preprocess_function(examples):
-    return New_tokenizer(examples["text"], examples["title"], truncation=True, max_length=512)
-#Turn the test_data into dataset
-test_data= Dataset.from_pandas(test_data)
-#Use our new version of the tokenizer to tokenize the test_data
-test_token= test_data.map(New_preprocess_function, batched=True)
-#Our training arguments
-training_args= TrainingArguments(
-    output_dir="Model",
-    learning_rate=2e-5,
-    per_device_train_batch_size=16,
-    gradient_accumulation_steps=62,
-    per_device_eval_batch_size=16,
-    num_train_epochs=3,
-    weight_decay=0.01,
-    eval_strategy="epoch",
-    save_strategy="epoch",
-    load_best_model_at_end=True,
-)
-trainer=Trainer(
-    model=Trained_model,
-    args=training_args,
-    train_dataset=test_token,
-    eval_dataset=test_token,
-    processing_class=New_tokenizer,
-    compute_metrics=computer_metrics,
-)
-training_metrics= trainer.train()
-metrics= trainer.evaluate()
-print("The trainig metrics", training_metrics.metrics)
-print("The metrics\n",metrics)
-model.save_pretrained("./Model")
-tokenizer.save_pretrained("./Model")
-#We are officially done with the original training and training for the finetuned model
+#We are officially done with the original training
 """ 
 Things to note about finetuning the model
 At 1000 rows it take about 40 second of training
