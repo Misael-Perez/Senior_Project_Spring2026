@@ -18,8 +18,8 @@ def computer_metrics(eval_pred):
 
 test_data=pd.read_csv("test.csv")
 
-Trained_model= AutoModelForSequenceClassification("./Test_Model")
-New_tokenizer = AutoTokenizer("./Test_Model")
+Trained_model= AutoModelForSequenceClassification.from_pretrained("./Test_Model")
+New_tokenizer = AutoTokenizer.from_pretrained("./Test_Model")
 #New function for the new tokenizer
 def New_preprocess_function(examples):
     return New_tokenizer(examples["text"], examples["title"], truncation=True, max_length=512)
