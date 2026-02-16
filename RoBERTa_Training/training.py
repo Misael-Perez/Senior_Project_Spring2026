@@ -30,11 +30,18 @@ def map_labels(labels):
     return {"label": [label_map[m] for m in labels["label"]]}
 
 def tokenization(claims):
+    evidences=[]
+    for e in claims["evidence"]:
+        if len(e)>0:
+            evidences.append(claims[0][2])      #fix later: account for multiple evidence senetnces.
+        else:
+            evidences.append("")
     return tokenizer(
         claims["claim"],
+        evidences,
         truncation=True,
-        #padding="max_length",
-        #max_length=512
+        padding="max_length",
+        max_length=512
     )
 #num_proc?
 
@@ -76,14 +83,14 @@ def compute_metrics(eval_preds):
 
 
 training_args=TrainingArguments(
-    "test6",
+    "test7",
     eval_strategy="steps",
     eval_steps=1000,
-    learning_rate=1e-5,                 #only chnage when loss seems to chnage weirdly or stays the same
+    learning_rate=2e-5,                 #only chnage when loss seems to chnage weirdly or stays the same
     per_device_train_batch_size=32,
     #gradient_accumulation_steps=8,
     per_device_eval_batch_size=256,     #GPU change:increase to 256
-    num_train_epochs=5,                 #GPU change: increase to 5
+    num_train_epochs=3,                 #GPU change: increase to 5
     #weight_decay=0.01,
     logging_steps=500,   #should probbaly decrease this                   #228 per epoch but no real time logging
     save_strategy="steps",
@@ -93,7 +100,7 @@ training_args=TrainingArguments(
 
 )
 
-
+#add later: class weights for NEI
 trainer = Trainer(
     model,
     training_args,
@@ -107,8 +114,8 @@ trainer = Trainer(
 
 trainer.train()
 
-trainer.save_model("Model_6")
-tokenizer.save_pretrained("Tokenizer_6")
+trainer.save_model("Model_7")
+tokenizer.save_pretrained("Tokenizer_7")
 #we will test next with test split
 testPredictions=trainer.predict(fever_test_dataset)
 print(dir(testPredictions))
