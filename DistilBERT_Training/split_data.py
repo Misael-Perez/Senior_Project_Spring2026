@@ -4,8 +4,8 @@ import numpy as np
 
 
 #Start of the preprocessing
-TrueData= pd.read_csv("True.csv")
-FakeData=pd.read_csv("Fake.csv")
+TrueData= pd.read_csv("News_dataset/True.csv")
+FakeData=pd.read_csv("News_dataset/Fake.csv")
 TrueData= TrueData.dropna()
 FakeData= FakeData.dropna()
 TrueData["label"]=True
