@@ -10,16 +10,30 @@ import numpy as np
 import evaluate
 from transformers import pipeline
 
-accuracy= evaluate.load("accuracy")
-def computer_metrics(eval_pred):
-    predictions,labels=eval_pred
-    predictions= np.argmax(predictions,axis=1)
-    return accuracy.compute(predictions=predictions, references=labels)
+accuracy_metrics= evaluate.load("accuracy")
+precision_metrics= evaluate.load("precision")
+recall_metrics= evaluate.load("recall")
+f1_metrics= evaluate.load("f1")
 
+def compute_metrics(eval_pred):
+    logits,labels=eval_pred
+    preds= np.argmax(logits,axis=1)
+    
+    accuracy= accuracy_metrics.compute(predictions=preds, references=labels)["accuracy"]
+    precision= precision_metrics.compute(predictions=preds, references=labels, average="binary")["precision"]
+    recall= recall_metrics.compute(predictions=preds, references=labels, average="binary")["recall"]
+    f1= f1_metrics.compute(predictions=preds,references=labels, average="binary")["f1"]
+    
+    return {
+        "accuracy":accuracy,
+        "precision":precision,
+        "recall":recall,
+        "f1":f1
+    }
 test_data=pd.read_csv("test.csv")
 
-Trained_model= AutoModelForSequenceClassification.from_pretrained("./Test_Model")
-New_tokenizer = AutoTokenizer.from_pretrained("./Test_Model")
+Trained_model= AutoModelForSequenceClassification.from_pretrained("./Model_1")
+New_tokenizer = AutoTokenizer.from_pretrained("./Model_1")
 #New function for the new tokenizer
 def New_preprocess_function(examples):
     return New_tokenizer(examples["text"], examples["title"], truncation=True, max_length=512)
@@ -46,14 +60,14 @@ trainer=Trainer(
     train_dataset=test_token,
     eval_dataset=test_token,
     processing_class=New_tokenizer,
-    compute_metrics=computer_metrics,
+    compute_metrics=compute_metrics,
 )
 training_metrics= trainer.train()
 metrics= trainer.evaluate()
 print("The trainig metrics", training_metrics.metrics)
 print("The metrics\n",metrics)
-Trained_model.save_pretrained("./Model")
-New_tokenizer.save_pretrained("./Model")
+Trained_model.save_pretrained("./Model_2")
+New_tokenizer.save_pretrained("./Model_2")
 
 """
 model_path = "./Test_Model"

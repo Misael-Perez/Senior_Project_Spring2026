@@ -79,7 +79,7 @@ model=AutoModelForSequenceClassification.from_pretrained(
 #Traing Arguments: What to set
 #The recommended epoch for sentient analysis is 3
 training_args= TrainingArguments(
-    output_dir="Test_Model",
+    output_dir="Model_1",
     learning_rate=2e-5,
     per_device_train_batch_size=16,
     gradient_accumulation_steps=62,
@@ -115,8 +115,8 @@ metrics= trainer.evaluate()
 print("\nThe information below is the Old method that was used to find the metrics")
 #print("The trainig metrics", training_metrics.metrics)
 print("The metrics\n",metrics)
-model.save_pretrained("./Test_Model")
-tokenizer.save_pretrained("./Test_Model")
+model.save_pretrained("./Model_1")
+tokenizer.save_pretrained("./Model_1")
 
 
 
