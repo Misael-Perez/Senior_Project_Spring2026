@@ -61,7 +61,7 @@ def compute_metrics(eval_pred):
     accuracy= accuracy_metrics.compute(predictions=preds, references=labels)["accuracy"]
     precision= precision_metrics.compute(predictions=preds, references=labels, average="binary")["precision"]
     recall= recall_metrics.compute(predictions=preds, references=labels, average="binary")["recall"]
-    f1= f1_metrics.compute(predicions=preds,references=labels, average="binary")["f1"]
+    f1= f1_metrics.compute(predictions=preds,references=labels, average="binary")["f1"]
     
     return {
         "accuracy":accuracy,
