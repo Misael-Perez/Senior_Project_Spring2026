@@ -99,7 +99,7 @@ trainer=Trainer(
     processing_class=tokenizer,
     compute_metrics=computer_metrics,
 )
-training_metrics= trainer.train()
+trainer.train()
 #We will use the test.csv here for predictions, Although we will also
 #be used for further finetuning on Model.py
 #We will be adding a confusion matrix to see the true positive, true negative,
@@ -112,7 +112,7 @@ print(final_matrix)
 #The output should be in the format 2x2 matrix
 metrics= trainer.evaluate()
 print("The information below is the Old method that was used to find the metrics")
-print("The trainig metrics", training_metrics.metrics)
+#print("The trainig metrics", training_metrics.metrics)
 print("The metrics\n",metrics)
 model.save_pretrained("./Test_Model")
 tokenizer.save_pretrained("./Test_Model")
