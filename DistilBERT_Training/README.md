@@ -1,2 +1,6 @@
-The zip file of the repo is the datasets for the distilBERT model.
-The Model.py and the update_test.py are the main files for the distilBERT's code.
+To begin:
+- First unzip the zip files
+- run split_data.py
+- run restructure_dataset2.py
+- run FineTune1_Model.py
+- run FineTune2_Model.py

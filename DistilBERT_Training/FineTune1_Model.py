@@ -9,6 +9,7 @@ import pandas as pd
 import numpy as np
 import evaluate
 from sklearn.metrics import confusion_matrix
+import matplotlib.pyplot as plt
 
 """
 This file will be an updated version of the news_test.py. Only the important parts of the code
@@ -113,10 +114,30 @@ print(final_matrix)
 #The output should be in the format 2x2 matrix
 metrics= trainer.evaluate()
 print("\nThe information below is the Old method that was used to find the metrics")
-#print("The trainig metrics", training_metrics.metrics)
+print("The trainig metrics\n", training_metrics.metrics)
 print("The metrics\n",metrics)
 model.save_pretrained("./Model_1")
 tokenizer.save_pretrained("./Model_1")
 
+#We will output the results of the confusion matrix and the metrics
+cols=("True Negative (Actual Fake)","False Postive")
+rows=("False Negative", "True postive (Actual Negative)" )
 
+fig,ax=plt.subplots()
+ax.set_axis_off()
+table_matrix= ax.table(cellText=final_matrix, colLabels=cols,rowlabels=rows, loc='center', cellLoc='center')
+plt.savefig("Model_1.png")
 
+#We will now save the results of the metrics into statistics.txt
+text="Results of the Training"
+text2="Results of the Evaluation"
+file_path="statistics.txt"
+
+with open(file_path,'w') as file:
+    file.write('\n')
+    file.write(text)
+    file.write(training_metrics.metrics)
+    file.write("\n")
+    file.write(text2)
+    file.write(metrics)
+print("Information has been saved")
