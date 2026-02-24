@@ -54,14 +54,14 @@ precision_metrics= evaluate.load("precision")
 recall_metrics= evaluate.load("recall")
 f1_metrics= evaluate.load("f1")
 
-def computer_metrics(eval_pred):
+def compute_metrics(eval_pred):
     logits,labels=eval_pred
     preds= np.argmax(logits,axis=1)
     
     accuracy= accuracy_metrics.compute(predictions=preds, references=labels)["accuracy"]
     precision= precision_metrics.compute(predictions=preds, references=labels, average="binary")["precision"]
     recall= recall_metrics.compute(predictions=preds, references=labels, average="binary")["recall"]
-    f1= f1_metrics.compute(predicions=preds,reference=labels, average="binary")["f1"]
+    f1= f1_metrics.compute(predicions=preds,references=labels, average="binary")["f1"]
     
     return {
         "accuracy":accuracy,
@@ -97,7 +97,7 @@ trainer=Trainer(
     train_dataset=train_token,
     eval_dataset=eval_token,
     processing_class=tokenizer,
-    compute_metrics=computer_metrics,
+    compute_metrics=compute_metrics,
 )
 trainer.train()
 #We will use the test.csv here for predictions, Although we will also
