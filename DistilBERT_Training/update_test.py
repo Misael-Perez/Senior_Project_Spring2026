@@ -8,6 +8,8 @@ from transformers import DataCollatorWithPadding
 import pandas as pd
 import numpy as np
 import evaluate
+from sklearn.metrics import confusion_matrix
+
 """
 This file will be an updated version of the news_test.py. Only the important parts of the code
 
@@ -16,6 +18,7 @@ This file will be an updated version of the news_test.py. Only the important par
 #Let's load our new datasets for the training
 train_data= pd.read_csv("train.csv")
 eval_data=pd.read_csv("eval.csv")
+test_data=pd.read_csv("test.csv")
 
 
 #We want to create tokens for our text
@@ -34,22 +37,41 @@ def preprocess_function(examples):
 #let's convert it.
 train_data= Dataset.from_pandas(train_data)
 eval_data= Dataset.from_pandas(eval_data)
+test_data=Dataset.from_pandas(test_data)
 
 #tokenize every text for both datasets
 train_token=train_data.map(preprocess_function, batched=True)
 eval_token= eval_data.map(preprocess_function, batched=True)
+test_token= test_data.map(preprocess_function, batched=True)
 
 #this is like a auto detect that will detect the largest length needed and apply it.
 # This is not needed no more data_collator= DataCollatorWithPadding(tokenizer=tokenizer)
 #The code below will allow us to view the metrics of the model
-accuracy= evaluate.load("accuracy")
+#We will update the compute_metrics() function to make a better statistics analysis
+#we want to investigate how often does it spot fake articles. How correct is it?
+accuracy_metrics= evaluate.load("accuracy")
+precision_metrics= evaluate.load("precision")
+recall_metrics= evaluate.load("recall")
+f1_metrics= evaluate.load("f1")
+
 def computer_metrics(eval_pred):
-    predictions,labels=eval_pred
-    predictions= np.argmax(predictions,axis=1)
-    return accuracy.compute(predictions=predictions, references=labels)
+    logits,labels=eval_pred
+    preds= np.argmax(logits,axis=1)
+    
+    accuracy= accuracy_metrics.compute(predictions=preds, references=labels)["accuracy"]
+    precision= precision_metrics.compute(predictions=preds, references=labels, average="binary")["precision"]
+    recall= recall_metrics.compute(predictions=preds, references=labels, average="binary")["recall"]
+    f1= f1_metrics.compute(predicions=preds,reference=labels, average="binary")["f1"]
+    
+    return {
+        "accuracy":accuracy,
+        "precision":precision,
+        "recall":recall,
+        "f1":f1
+    }
 #This will allow us to classify what is good and bad
-id2label= {0: "NEGATIVE", 1:"POSITIVE"}
-label2id={"NEGATIVE":0, "POSITIVE":1}
+id2label= {0: "Fake", 1:"Real"}
+label2id={"Fake":0, "Real":1}
 #Our model
 model=AutoModelForSequenceClassification.from_pretrained(
     "distilbert-base-uncased",num_labels=2,id2label=id2label, label2id=label2id
@@ -78,27 +100,22 @@ trainer=Trainer(
     compute_metrics=computer_metrics,
 )
 training_metrics= trainer.train()
+#We will use the test.csv here for predictions, Although we will also
+#be used for further finetuning on Model.py
+#We will be adding a confusion matrix to see the true positive, true negative,
+#fake positive, and fake negative. Plus for some visual aid.
+predictions= trainer.predict(test_token)
+pred= np.argmax(predictions.predictions, axis=1)
+labels= predictions.label_ids
+final_matrix= confusion_matrix(labels,pred)
+print(final_matrix)
+#The output should be in the format 2x2 matrix
 metrics= trainer.evaluate()
+print("The information below is the Old method that was used to find the metrics")
 print("The trainig metrics", training_metrics.metrics)
 print("The metrics\n",metrics)
 model.save_pretrained("./Test_Model")
 tokenizer.save_pretrained("./Test_Model")
 
-#We are officially done with the original training
-""" 
-Things to note about finetuning the model
-At 1000 rows it take about 40 second of training
-At 2000 rows it was about 2 minutes
 
-"""
-# Split the dataset into 3 dataframes training, test, and evaluation.
-# Goal of the project is to be above 21% accuracy (which is decent for a model. We want at least 80%)
-#pytorch to be able to split the dataset for 90% to 10% for evaluation
-#Goal for now: split the dataset into 3. Increase the nunber
 
-"""
-Notes:
-the professor stated that the training dataset can be used for the evaluation for the.
-But I can split the dataset into training, evaluation and test.
-The test is what can be used to train
-"""
