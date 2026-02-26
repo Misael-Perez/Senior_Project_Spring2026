@@ -120,24 +120,27 @@ model.save_pretrained("./Model_1")
 tokenizer.save_pretrained("./Model_1")
 
 #We will output the results of the confusion matrix and the metrics
-cols=("True Negative (Actual Fake)","False Postive")
-rows=("False Negative", "True postive (Actual Negative)" )
+cols=("Predicted Fake","Predicted Real")
+rows=("Actual Fake", "Actual Real" )
 
 fig,ax=plt.subplots()
 ax.set_axis_off()
-table_matrix= ax.table(cellText=final_matrix, colLabels=cols,rowlabels=rows, loc='center', cellLoc='center')
+table_matrix= ax.table(cellText=final_matrix, colLabels=cols,rowLabels=rows, loc='center', cellLoc='center')
+table_matrix.auto_set_font_size(False)
+table_matrix.set_fontsize(10)
+table_matrix.scale(1.2, 1.2)
 plt.savefig("Model_1.png")
 
 #We will now save the results of the metrics into statistics.txt
-text="Results of the Training"
-text2="Results of the Evaluation"
+text="Results of the Training (Model_1)"
+text2="Results of the Evaluation (Model_1)"
 file_path="statistics.txt"
 
 with open(file_path,'w') as file:
     file.write('\n')
     file.write(text)
-    file.write(training_metrics.metrics)
+    file.write(str(training_metrics.metrics))
     file.write("\n")
     file.write(text2)
-    file.write(metrics)
+    file.write(str(metrics))
 print("Information has been saved")
