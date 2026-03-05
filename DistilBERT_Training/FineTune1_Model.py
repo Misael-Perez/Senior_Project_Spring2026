@@ -28,7 +28,7 @@ tokenizer= AutoTokenizer.from_pretrained("distilbert-base-uncased")
 #Using the code from huggingface
 #we want to get the title and the text
 def preprocess_function(examples):
-    return tokenizer(examples["text"], examples["title"], truncation=True, max_length=512)
+    return tokenizer(examples["title"], examples["text"], truncation=True, max_length=512)
 
 #Let's limit the number of rows. Might increase
 #train_data= train_data[:3000]
@@ -83,7 +83,7 @@ training_args= TrainingArguments(
     output_dir="Model_1",
     learning_rate=2e-5,
     per_device_train_batch_size=16,
-    gradient_accumulation_steps=62,
+    gradient_accumulation_steps=4, #Changed because it doesn't require a large number for a small portion
     per_device_eval_batch_size=16,
     num_train_epochs=3,
     weight_decay=0.01,
@@ -108,14 +108,19 @@ training_metrics=trainer.train()
 predictions= trainer.predict(test_token)
 pred= np.argmax(predictions.predictions, axis=1)
 labels= predictions.label_ids
+
 final_matrix= confusion_matrix(labels,pred)
-print("\nThe Matrix below is the confusion matrix")
+print("\nThe Matrix below is the confusion matrix on the Test data")
 print(final_matrix)
 #The output should be in the format 2x2 matrix
-metrics= trainer.evaluate()
-print("\nThe information below is the Old method that was used to find the metrics")
-print("The trainig metrics\n", training_metrics.metrics)
-print("The metrics\n",metrics)
+
+test_metrics= trainer.evaluate(test_token)
+
+print("\nThe Test metrics\n", test_metrics)
+
+eval_metrics= trainer.evaluate()
+print("\n Validation Metrics")
+print(eval_metrics)
 model.save_pretrained("./Model_1")
 tokenizer.save_pretrained("./Model_1")
 
@@ -133,14 +138,23 @@ plt.savefig("Model_1.png")
 
 #We will now save the results of the metrics into statistics.txt
 text="Results of the Training (Model_1)"
-text2="Results of the Evaluation (Model_1)"
+text2="Results of the Validation (Model_1)"
+text3="Results of the Test (Model_1)"
 file_path="statistics.txt"
-
+ 
 with open(file_path,'w') as file:
     file.write('\n')
     file.write(text)
     file.write(str(training_metrics.metrics))
     file.write("\n")
-    file.write(text2)
-    file.write(str(metrics))
+    file.write(text2 + "\n")
+    file.write(f"Accuracy: {eval_metrics['eval_accuracy']}\n")
+    file.write(f"Precision: {eval_metrics['eval_precision']}\n")
+    file.write(f"Recall: {eval_metrics['eval_recall']}\n")
+    file.write(f"F1: {eval_metrics['eval_f1']}\n\n")
+    file.write(text3)
+    file.write(f"Accuracy: {test_metrics['eval_accuracy']}\n")
+    file.write(f"Precision: {test_metrics['eval_precision']}\n")
+    file.write(f"Recall: {test_metrics['eval_recall']}\n")
+    file.write(f"F1: {test_metrics['eval_f1']}\n")
 print("Information has been saved")

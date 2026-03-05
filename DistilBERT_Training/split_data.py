@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from sklearn.model_selection import train_test_split
 
 
 
@@ -15,11 +16,19 @@ FakeData["label"]=False
 officialTable= pd.concat([TrueData,FakeData])
 officialTable=officialTable.reset_index(drop=True)
 #We will shuffle the data and create separate dataframes
-shuffled= officialTable.sample(frac=1).reset_index(drop=True)
-two_tables= np.array_split(shuffled,3)
-train_data= pd.DataFrame(two_tables[0],columns=["title","text","subject","date","label"])
-eval_data= pd.DataFrame(two_tables[1],columns=["title","text","subject","date","label"])
-test_data= pd.DataFrame(two_tables[2],columns=["title","text","subject","date","label"])
+#More better splitting
+train_data,remain= train_test_split(
+    officialTable,
+    test_size=0.33,
+    stratify=officialTable["label"],
+    random_state=42
+)
+eval_data,test_data= train_test_split(
+    remain,
+    test_size=0.5,
+    stratify=remain["label"],
+    random_state=42
+)
 
 train_data= train_data.reset_index(drop=True)
 eval_data= eval_data.reset_index(drop=True)
@@ -33,6 +42,6 @@ test_data["label"]= test_data["label"].astype(int)
 
 #We will now turn the data into csv
 
-train_data.to_csv("train.csv")
-eval_data.to_csv("eval.csv")
-test_data.to_csv("test.csv")
+train_data.to_csv("train.csv", index=False)
+eval_data.to_csv("eval.csv", index=False)
+test_data.to_csv("test.csv",index=False)
