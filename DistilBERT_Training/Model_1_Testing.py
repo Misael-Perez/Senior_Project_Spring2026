@@ -55,6 +55,14 @@ WEL_3_data=Dataset.from_pandas(WEL_3_data)
 WEL_1_data=WEL_1_data.map(preprocess_function, batched=True)
 WEL_2_data= WEL_2_data.map(preprocess_function, batched=True)
 WEL_3_data= WEL_3_data.map(preprocess_function, batched=True)
+#Remove all colmuns that will not be used
+WEL_1_data = WEL_1_data.remove_columns(["title","text"])
+WEL_2_data = WEL_2_data.remove_columns(["title","text"])
+WEL_3_data = WEL_3_data.remove_columns(["title","text"])
+#set to torch
+WEL_1_data.set_format("torch")
+WEL_2_data.set_format("torch")
+WEL_3_data.set_format("torch")
 
 training_args= TrainingArguments(
     output_dir="./Model_1_results", #Changed because it doesn't require a large number for a small portion
