@@ -71,7 +71,7 @@ training_args= TrainingArguments(
 trainer=Trainer(
     model=Trained_model,
     args=training_args,
-    tokenizer=New_tokenizer,
+    processing_class=New_tokenizer,
     compute_metrics=compute_metrics,
 )
 
