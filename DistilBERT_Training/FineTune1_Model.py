@@ -20,6 +20,8 @@ This file will be an updated version of the news_test.py. Only the important par
 train_data= pd.read_csv("train.csv")
 eval_data=pd.read_csv("eval.csv")
 test_data=pd.read_csv("test.csv")
+#see the balance of fake and real articles
+print(train_data["labels"].value_counts())
 
 
 #We want to create tokens for our text
@@ -44,6 +46,14 @@ test_data=Dataset.from_pandas(test_data)
 train_token=train_data.map(preprocess_function, batched=True)
 eval_token= eval_data.map(preprocess_function, batched=True)
 test_token= test_data.map(preprocess_function, batched=True)
+#remove them
+train_token = train_token.remove_columns(["title","text"])
+eval_token = eval_token.remove_columns(["title","text"])
+test_token = test_token.remove_columns(["title","text"])
+#set them to torch format
+train_token.set_format("torch")
+eval_token.set_format("torch")
+test_token.set_format("torch")
 
 #this is like a auto detect that will detect the largest length needed and apply it.
 # This is not needed no more data_collator= DataCollatorWithPadding(tokenizer=tokenizer)
@@ -89,6 +99,7 @@ training_args= TrainingArguments(
     weight_decay=0.01,
     eval_strategy="epoch",
     save_strategy="epoch",
+    logging_strategy="epoch",
     load_best_model_at_end=True,
 )
 #What we will use for the training.
@@ -118,7 +129,7 @@ test_metrics= trainer.evaluate(test_token)
 
 print("\nThe Test metrics\n", test_metrics)
 
-eval_metrics= trainer.evaluate()
+eval_metrics= trainer.evaluate(eval_token)
 print("\n Validation Metrics")
 print(eval_metrics)
 model.save_pretrained("./Model_1")
