@@ -15,6 +15,8 @@ FakeData["labels"]=False
 #Merge
 officialTable= pd.concat([TrueData,FakeData])
 officialTable=officialTable.reset_index(drop=True)
+officialTable = officialTable.drop_duplicates(subset=["title","text"])
+officialTable=officialTable.drop(columns=["subject","date"])
 
 #We will shuffle the data and create separate dataframes
 #More better splitting
