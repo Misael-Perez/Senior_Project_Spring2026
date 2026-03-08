@@ -33,20 +33,44 @@ def compute_metrics(eval_pred):
         "f1":f1
     }
 
-train_dataset2=pd.read_csv("train_dataset2.csv")
-test_dataset2=pd.read_csv("test_dataset2.csv")
-
 Trained_model= AutoModelForSequenceClassification.from_pretrained("./Model_1")
 New_tokenizer = AutoTokenizer.from_pretrained("./Model_1")
-#New function for the new tokenizer
 def preprocess_function(examples):
-    return New_tokenizer(examples["text"], examples["title"], truncation=True, max_length=512)
-#Turn the test_data into dataset
-train_data=Dataset.from_pandas(train_dataset2)
-test_data= Dataset.from_pandas(test_dataset2)
-#Use our new version of the tokenizer to tokenize the test_data
-train_token= train_data.map(preprocess_function, batched=True)
-test_token= test_data.map(preprocess_function, batched=True)
+    return New_tokenizer(examples["title"], examples["text"], truncation=True, max_length=512)
+
+#Let's load our data
+WEL_1_data= pd.read_csv("WEL1/Wel_PT1.csv")
+WEL_2_data=pd.read_csv("WEL2/Wel_PT2.csv")
+WEL_3_data=pd.read_csv("WEL3/Wel_PT3.csv")
+#Invert the labels
+WEL_1_data["labels"] = 1 - WEL_1_data["labels"]
+WEL_2_data["labels"] = 1 - WEL_2_data["labels"]
+WEL_3_data["labels"] = 1 - WEL_3_data["labels"]
+Large_Data = pd.concat([WEL_1_data, WEL_2_data], ignore_index=True)
+
+#There is a problem, the model and the tokens can only be used as a hugging face dataset
+#let's convert it.
+WEL_1_data= Dataset.from_pandas(WEL_1_data)
+WEL_2_data= Dataset.from_pandas(WEL_2_data)
+WEL_3_data=Dataset.from_pandas(WEL_3_data)
+Large_Data=Dataset.from_pandas(Large_Data)
+
+#tokenize every text for both datasets
+WEL_1_data=WEL_1_data.map(preprocess_function, batched=True)
+WEL_2_data= WEL_2_data.map(preprocess_function, batched=True)
+WEL_3_data= WEL_3_data.map(preprocess_function, batched=True)
+Large_Data= Large_Data.map(preprocess_function, batched=True)
+#Remove all colmuns that will not be used
+WEL_1_data = WEL_1_data.remove_columns(["title","text"])
+WEL_2_data = WEL_2_data.remove_columns(["title","text"])
+WEL_3_data = WEL_3_data.remove_columns(["title","text"])
+Large_Data = Large_Data.remove_columns(["title","text"])
+#set to torch
+WEL_1_data.set_format("torch")
+WEL_2_data.set_format("torch")
+WEL_3_data.set_format("torch")
+Large_Data.set_format("torch")
+
 #Our training arguments
 training_args= TrainingArguments(
     output_dir="Model_2",
@@ -63,20 +87,15 @@ training_args= TrainingArguments(
 trainer=Trainer(
     model=Trained_model,
     args=training_args,
-    train_dataset=train_token,
-    eval_dataset=train_token,
+    train_dataset=Large_Data,
+    eval_dataset=WEL_2_data,
     processing_class=New_tokenizer,
     compute_metrics=compute_metrics,
 )
 training_metrics= trainer.train()
-metrics= trainer.evaluate()
-print("\nThe information below is the Old method that was used to find the metrics")
-print("The trainig metrics\n", training_metrics.metrics)
-print("The metrics\n",metrics)
-
 #We will be adding a confusion matrix to see the true positive, true negative,
 #fake positive, and fake negative. Plus for some visual aid.
-predictions= trainer.predict(test_token)
+predictions= trainer.predict(WEL_3_data)
 pred= np.argmax(predictions.predictions, axis=1)
 labels= predictions.label_ids
 
@@ -85,10 +104,10 @@ print("\nThe Matrix below is the confusion matrix on the Test data")
 print(final_matrix)
 #The output should be in the format 2x2 matrix
 
-test_metrics= trainer.evaluate(test_token)
+test_metrics= trainer.evaluate(WEL_3_data)
 print("\nThe Test metrics\n", test_metrics)
 
-eval_metrics= trainer.evaluate()
+eval_metrics= trainer.evaluate(WEL_2_data)
 print("\n Validation Metrics")
 print(eval_metrics)
 Trained_model.save_pretrained("./Model_2")
