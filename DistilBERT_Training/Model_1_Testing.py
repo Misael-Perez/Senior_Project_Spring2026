@@ -44,6 +44,7 @@ def preprocess_function(examples):
 WEL_1_data= pd.read_csv("WEL1/Wel_PT1.csv")
 WEL_2_data=pd.read_csv("WEL2/Wel_PT2.csv")
 WEL_3_data=pd.read_csv("WEL3/Wel_PT3.csv")
+WEL_1_data["labels"] = 1 - WEL_1_data["labels"]
 
 #There is a problem, the model and the tokens can only be used as a hugging face dataset
 #let's convert it.
@@ -85,7 +86,7 @@ pred= np.argmax(predictions.predictions, axis=1)
 labels= predictions.label_ids
 final_matrix= confusion_matrix(labels,pred)
 print(final_matrix)
-
+"""
 print("Evaluation on the second WEL data")
 results2= trainer.evaluate(WEL_2_data)
 print(results2)
@@ -105,3 +106,4 @@ pred= np.argmax(predictions.predictions, axis=1)
 labels= predictions.label_ids
 final_matrix= confusion_matrix(labels,pred)
 print(final_matrix)
+"""
