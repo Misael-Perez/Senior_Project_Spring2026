@@ -57,16 +57,9 @@ WEL_2_data= WEL_2_data.map(preprocess_function, batched=True)
 WEL_3_data= WEL_3_data.map(preprocess_function, batched=True)
 
 training_args= TrainingArguments(
-    output_dir="Model_1_results",
-    learning_rate=2e-5,
-    per_device_train_batch_size=16,
-    gradient_accumulation_steps=4, #Changed because it doesn't require a large number for a small portion
+    output_dir="./Model_1_results", #Changed because it doesn't require a large number for a small portion
     per_device_eval_batch_size=16,
-    num_train_epochs=3,
-    weight_decay=0.01,
-    eval_strategy="epoch",
-    save_strategy="epoch",
-    load_best_model_at_end=True,
+
 )
 trainer=Trainer(
     model=Trained_model,
