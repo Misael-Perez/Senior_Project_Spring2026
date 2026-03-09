@@ -1,3 +1,5 @@
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = ""
 from datasets import load_dataset
 from datasets import Dataset
 from transformers import AutoTokenizer
