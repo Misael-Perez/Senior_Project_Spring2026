@@ -14,11 +14,13 @@ import matplotlib.pyplot as plt
 
 
 """ 
+
 We will create a model that will perform two tasks. That is why we will create a model with 
 two head classification. In order to do this, we will have to create our custom model for the task
 First we will create our custom model before training.
 
-Reminder, theoretically this model can be used for student model from BERT
+Reminder, theoretically this model can be used for student model from BERT. However, because it is a two-head classification model,
+you need to use a GPU based model like BERT
 """
 class two_TaskModel(nn.Module):
     #Let's build our constructor
