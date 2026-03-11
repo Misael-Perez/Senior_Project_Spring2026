@@ -1,3 +1,5 @@
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = ""
 from datasets import load_dataset
 from datasets import Dataset
 from transformers import AutoTokenizer, AutoModel
@@ -33,8 +35,8 @@ def compute_metrics(eval_pred):
         "f1":f1
     }
 
-Trained_model= AutoModelForSequenceClassification.from_pretrained("./Model_1")
-New_tokenizer = AutoTokenizer.from_pretrained("./Model_1")
+Trained_model= AutoModelForSequenceClassification.from_pretrained("./Model_1_CPU")
+New_tokenizer = AutoTokenizer.from_pretrained("./Model_1_CPU")
 def preprocess_function(examples):
     return New_tokenizer(examples["title"], examples["text"], truncation=True, max_length=512)
 
@@ -73,7 +75,7 @@ Large_Data.set_format("torch")
 
 #Our training arguments
 training_args= TrainingArguments(
-    output_dir="Model_2",
+    output_dir="Model_2_CPU",
     learning_rate=2e-5,
     per_device_train_batch_size=16,
     gradient_accumulation_steps=4,
@@ -110,8 +112,8 @@ print("\nThe Test metrics\n", test_metrics)
 eval_metrics= trainer.evaluate(WEL_2_data)
 print("\n Validation Metrics")
 print(eval_metrics)
-Trained_model.save_pretrained("./Model_2")
-New_tokenizer.save_pretrained("./Model_2")
+Trained_model.save_pretrained("./Model_2_CPU")
+New_tokenizer.save_pretrained("./Model_2_CPU")
 
 #We will output the results of the confusion matrix and the metrics
 cols=("Predicted Fake","Predicted Real")
@@ -123,12 +125,12 @@ table_matrix= ax.table(cellText=final_matrix, colLabels=cols,rowLabels=rows, loc
 table_matrix.auto_set_font_size(False)
 table_matrix.set_fontsize(10)
 table_matrix.scale(1.2, 1.2)
-plt.savefig("Model_2.png")
+plt.savefig("Model_2_CPU.png")
 
 #We will now save the results of the metrics into statistics.txt
-text="Results of the Training (Model_2)"
-text2="Results of the Validation (Model_2)"
-text3="Results of the Test (Model_2)"
+text="Results of the Training CPU(Model_2)"
+text2="Results of the Validation CPU(Model_2)"
+text3="Results of the Test CPU(Model_2)"
 file_path="statistics.txt"
  
 with open(file_path,'w') as file:

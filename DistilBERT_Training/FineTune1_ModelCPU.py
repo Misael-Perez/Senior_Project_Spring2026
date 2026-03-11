@@ -1,4 +1,5 @@
-
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = ""
 from datasets import load_dataset
 from datasets import Dataset
 from transformers import AutoTokenizer
@@ -91,7 +92,7 @@ model=AutoModelForSequenceClassification.from_pretrained(
 #Traing Arguments: What to set
 #The recommended epoch for sentient analysis is 3
 training_args= TrainingArguments(
-    output_dir="Model_1",
+    output_dir="Model_1_CPU",
     learning_rate=2e-5,
     per_device_train_batch_size=16,
     gradient_accumulation_steps=4, #Changed because it doesn't require a large number for a small portion
@@ -133,8 +134,8 @@ print("\nThe Test metrics\n", test_metrics)
 eval_metrics= trainer.evaluate(eval_token)
 print("\n Validation Metrics")
 print(eval_metrics)
-model.save_pretrained("./Model_1")
-tokenizer.save_pretrained("./Model_1")
+model.save_pretrained("./Model_1_CPU")
+tokenizer.save_pretrained("./Model_1_CPU")
 
 #We will output the results of the confusion matrix and the metrics
 cols=("Predicted Fake","Predicted Real")
@@ -146,12 +147,12 @@ table_matrix= ax.table(cellText=final_matrix, colLabels=cols,rowLabels=rows, loc
 table_matrix.auto_set_font_size(False)
 table_matrix.set_fontsize(10)
 table_matrix.scale(1.2, 1.2)
-plt.savefig("Model_1.png")
+plt.savefig("Model_1_CPU.png")
 
 #We will now save the results of the metrics into statistics.txt
-text="Results of the Training (Model_1)"
-text2="Results of the Validation (Model_1)"
-text3="Results of the Test (Model_1)"
+text="Results of the Training on CPU(Model_1)"
+text2="Results of the Validation on CPU(Model_1)"
+text3="Results of the Test CPU(Model_1)"
 file_path="statistics.txt"
  
 with open(file_path,'w') as file:
