@@ -1,11 +1,9 @@
 import torch
 from transformers import (
     AutoTokenizer,
-    #RobertaForSequenceClassification,
     AutoModelForSequenceClassification,
     TrainingArguments,
     Trainer,
-    #DataCollatorWithPadding
 )
 from datasets import load_dataset, load_dataset_builder
 import evaluate
@@ -20,8 +18,6 @@ tokenizer=AutoTokenizer.from_pretrained(checkpoint)
 
 feverDataset=load_dataset("copenlu/fever_gold_evidence")
 
-print(feverDataset)
-
 label_map={
     "SUPPORTS": 0,
     "REFUTES": 1,
@@ -30,7 +26,6 @@ label_map={
 
 def map_labels(labels):
     return {"label": [label_map[m] for m in labels["label"]]}
-
 
 def tokenization(claims):
     evidences=[]
@@ -88,7 +83,6 @@ def compute_metrics(eval_preds):
             "f1_nei": per_class[2],
             }
 
-
 training_args=TrainingArguments(
     "test8wWeights",
     eval_strategy="steps",
@@ -107,7 +101,7 @@ training_args=TrainingArguments(
     greater_is_better=True
 )
 
-class_weights=torch.tensor([1.0/supports_count, 1.0/refutes_count, 1.0/nei_count])       #used inveer
+class_weights=torch.tensor([1.0/supports_count, 1.0/refutes_count, 1.0/nei_count])       #used inverse frequency
 class myTrainer(Trainer):
     def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
         labels=inputs.get("labels")
@@ -128,7 +122,6 @@ trainer = myTrainer(
     train_dataset=fever_train_dataset,
     eval_dataset=fever_validation_dataset,
     tokenizer=tokenizer,
-    #processing_class=tokenizer,
     compute_metrics=compute_metrics,
 )
 
