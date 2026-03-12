@@ -131,7 +131,7 @@ plt.savefig("Model_2_CPU.png")
 text="Results of the Training CPU(Model_2)"
 text2="Results of the Validation CPU(Model_2)"
 text3="Results of the Test CPU(Model_2)"
-file_path="statistics.txt"
+file_path="statistics_CPU.txt"
  
 with open(file_path,'w') as file:
     file.write('\n')
