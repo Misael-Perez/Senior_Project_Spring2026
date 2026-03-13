@@ -113,12 +113,14 @@ test_data=Dataset.from_pandas(test_data)
 def addcolumn1(data):
     data["task"]="News"
     return data
-train_data=train_data.map(addcolumn1)
-eval_data= eval_data.map(addcolumn1)
-test_data=test_data.map(addcolumn1)
+
 train_token=train_data.map(news_tokenizer, batched=True)
 eval_token= eval_data.map(news_tokenizer, batched=True)
 test_token= test_data.map(news_tokenizer, batched=True)
+
+train_token=train_token.map(addcolumn1)
+eval_token= eval_token.map(addcolumn1)
+test_token=test_token.map(addcolumn1)
 #remove them
 train_token = train_token.remove_columns(["title","text"])
 eval_token = eval_token.remove_columns(["title","text"])
@@ -143,6 +145,7 @@ def addcolumn(data):
 feverDataset= feverDataset.map(addcolumn)
 feverDataset=feverDataset.map(evidence_tokenization, batched=True)
 feverDataset=feverDataset.map(map_labels, batched=True)
+feverDataset= feverDataset.map(addcolumn)
 
 fever_train_dataset=feverDataset["train"].select(range(2000))
 fever_validation_dataset=feverDataset["validation"].select(range(2000)) # will use to evaluate model
