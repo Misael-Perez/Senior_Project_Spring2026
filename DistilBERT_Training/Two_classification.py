@@ -11,6 +11,7 @@ import numpy as np
 import evaluate
 from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
+from datasets import Dataset
 
 
 """ 
