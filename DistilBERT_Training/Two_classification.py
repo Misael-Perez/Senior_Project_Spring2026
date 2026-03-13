@@ -25,7 +25,7 @@ you need to use a GPU based model like BERT
 class two_TaskModel(nn.Module):
     #Let's build our constructor
     #let's put a place holder for the model_name
-    def __init__(self,model_name="roberta-base"):
+    def __init__(self,model_name):
         super(two_TaskModel,self).__init__()
         #load the headless Model
         self.encoder = AutoModel.from_pretrained(model_name)
@@ -58,103 +58,41 @@ class two_TaskModel(nn.Module):
             raise ValueError("Please select the right task")
         loss=None
         return {"loss": loss, "logits": logits}
-    def data_tokenizer(self,dataset,task,)
-#This class is to tokenizer the kaggle dataset used for distilBERT   
-class News_Datasets(Dataset):
-    def __init__(self,texts,labels,tokenizer):
-        self.texts=texts
-        self.labels=labels
-        self.tokenizer=tokenizer
-    def __len__(self):
-        return len(self.texts)
     
-    def __getitem__(self, idx):
-        encoding=self.tokenizer(
-            self.texts[idx],
-            padding="max_length",
-            truncation=True,
-            max_length=128,
-            return_tensors="pt"
-        )
-        
-        return {
-            "input_ids": encoding["input_ids"].squeeze(),
-            "attention_mask": encoding["attention_mask"].squeeze(),
-            "labels": torch.tensor(self.labels[idx]),
-            "task":"News"
-        }
-#class is to tokenizer the fever gold dataset
-class Evidence_Datasets(Dataset):
-    def __init__(self,dataset,labels,tokenizer):
-        self.texts=dataset
-        self.labels=labels
-        self.tokenizer=tokenizer
-    def __len__(self):
-        return len(self.dataset)
+def map_labels(labels):
+    return {"label": [label_map[m] for m in labels["label"]]}
+    
+def news_tokenizer(dataset,tokenizer):
+    return tokenizer(
+        dataset["title"], dataset["text"], truncation=True, max_length=512
+    )
+    
+def evidence_tokenization(dataset,tokenizer):
+    evidences=[]
+    for e in dataset["evidence"]:
+        if len(e)>0:
+            text=" ".join([ev[2] for ev in e])
+        else:
+            text=""
+        evidences.append(text)
 
-    def __getitem__(self,idx):
-        evidences=[]
-        for e in idx["evidence"]:
-            if len(e)>0:
-                text=" ".join([ev[2] for ev in e])
-            else:
-                text=""
-            evidences.append(text)
-        encoding= self.tokenizer(
-            self.dataset["claim"],
-            self.evidences,
-            truncation=True,
-            padding="max_length",
-            max_length=512,
-            return_tensors="pt"
-            
-        )
-        return{
-            "input_ids": encoding["input_ids"].squeeze(),
-            "attention_mask": encoding["attention_mask"].squeeze(),
-            "labels": torch.tensor(self.labels[idx]),
-            "task":"evidence"
-        }
-# A function that will set the training arguments base on the task
-def get_Arguments(task):
-    if (task=="News"):
-        return TrainingArguments(
-        output_dir="news",
-        learning_rate=2e-5,
-        per_device_train_batch_size=16,
-        gradient_accumulation_steps=4,
-        per_device_eval_batch_size=16,
-        num_train_epochs=3,
-        weight_decay=0.01,
-        eval_strategy="epoch",
-        save_strategy="epoch",
-        load_best_model_at_end=True,
-        )
-    if (task=="evidence"):
-        return TrainingArguments(
-        "evidence",
-        eval_strategy="steps",
-        eval_steps=1000,
-        learning_rate=2e-5,                 
-        per_device_train_batch_size=32,
-        per_device_eval_batch_size=256,     
-        num_train_epochs=3,                 
-        weight_decay=0.01,
-        logging_steps=500,   
-        save_strategy="steps",
-        save_steps=1000,                     
-        warmup_ratio=0.1,
-        load_best_model_at_end=True,
-        metric_for_best_model="macro_f1",
-        greater_is_better=True
-)
+    return tokenizer(
+        dataset["claim"],
+        evidences,
+        truncation=True,
+        padding="max_length",
+        max_length=512
+    )
+def map_labels(labels):
+    return {"label": [label_map[m] for m in labels["label"]]}
+
 #The following classes are for the compute metrics
 accuracy_metric= evaluate.load("accuracy")
 precision_metrics= evaluate.load("precision")
 recall_metrics= evaluate.load("recall")
 f1_metric= evaluate.load("f1")
 #These can be used individually for each task
-def new_compute_metrics(eval_pred):
+def news_compute_metrics(eval_pred):
     logits,labels=eval_pred
     preds= np.argmax(logits,axis=1)
     
@@ -190,13 +128,33 @@ def evidence_compute_metrics(eval_preds):
 
 """
 To organize our datasets and the way we are going to modify them, we are going to group operations together
+Reminder, add a column named task for each of the datasets
 """
 #News articles data
 train_data= pd.read_csv("train.csv")
 eval_data=pd.read_csv("eval.csv")
 test_data=pd.read_csv("test.csv")
-
 id2label= {0: "Fake", 1:"Real"}
+#Add a column named task
+train_data["task"]="News"
+eval_data["task"]="News"
+test_data["task"]="News"
+#Let's turn it into a dataset for the model
+train_data= Dataset.from_pandas(train_data)
+eval_data= Dataset.from_pandas(eval_data)
+test_data=Dataset.from_pandas(test_data)
+#map the tokenizer
+train_token=train_data.map(news_tokenizer, batched=True)
+eval_token= eval_data.map(news_tokenizer, batched=True)
+test_token= test_data.map(news_tokenizer, batched=True)
+#remove them
+train_token = train_token.remove_columns(["title","text"])
+eval_token = eval_token.remove_columns(["title","text"])
+test_token = test_token.remove_columns(["title","text"])
+#set them to torch format
+train_token.set_format("torch")
+eval_token.set_format("torch")
+test_token.set_format("torch")
 
 """The following part of the code is to prepare for the tokenization of the fever gold evidence data"""
 #We load the fever dataset along side witht the labels and tokenizers
@@ -206,6 +164,9 @@ label_map={
     "REFUTES": 1,
     "NOT ENOUGH INFO": 2
 }
+#using the functions, we map them
+feverDataset=feverDataset.map(evidence_tokenization, batched=True)
+feverDataset=feverDataset.map(map_labels, batched=True)
 
 fever_train_dataset=feverDataset["train"]
 fever_validation_dataset=feverDataset["validation"] # will use to evaluate model
@@ -214,8 +175,91 @@ fever_test_dataset=feverDataset["test"] #will use to test the model later
 supports_count=fever_train_dataset["label"].count(0)
 refutes_count=fever_train_dataset["label"].count(1)
 nei_count=fever_train_dataset["label"].count(2)
-evidence_tokenizer=AutoTokenizer.from_pretrained("roberta-base")
+fever_train_dataset=fever_train_dataset.select_columns(["input_ids", "attention_mask", "label"])
 class_weights=torch.tensor([1.0/supports_count, 1.0/refutes_count, 1.0/nei_count])  
+
+
+#We will now load our verison of the model
+model= two_TaskModel("roberta-base")
+
+"""The following section would be about the training arguments and their trainer.
+We would be training the model sequentially. So, first train on task 1 and then on task 2."""
+#task1 Arguments
+news_training_args= TrainingArguments(
+    output_dir="Two_Task_Model_1_news",
+    learning_rate=2e-5,
+    per_device_train_batch_size=16,
+    gradient_accumulation_steps=4, #Changed because it doesn't require a large number for a small portion
+    per_device_eval_batch_size=16,
+    num_train_epochs=3,
+    weight_decay=0.01,
+    eval_strategy="epoch",
+    save_strategy="epoch",
+    logging_strategy="epoch",
+    load_best_model_at_end=True,
+)
+#task2 Arguments
+evidence_training_args=TrainingArguments(
+    "Two_Task_Model_1_evidence",
+    eval_strategy="steps",
+    eval_steps=1000,
+    learning_rate=2e-5,                 
+    per_device_train_batch_size=32,
+    per_device_eval_batch_size=256,     
+    num_train_epochs=3,                 
+    weight_decay=0.01,
+    logging_steps=500,   
+    save_strategy="steps",
+    save_steps=1000,                     
+    warmup_ratio=0.1,
+    load_best_model_at_end=True,
+    metric_for_best_model="macro_f1",
+    greater_is_better=True
+)
+#news trainer
+news_trainer=Trainer(
+    model=model,
+    args=news_training_args,
+    train_dataset=train_token,
+    eval_dataset=eval_token,
+    processing_class=news_tokenizer,
+    compute_metrics=news_compute_metrics,
+)
+news_trainer.train()
+
+class myTrainer(Trainer):
+    def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
+        labels=inputs.get("labels")
+        outputs=model(**inputs)        
+        logits=outputs.logits
+        if labels is not None:
+            cross_func = nn.CrossEntropyLoss(weight=class_weights.to(logits.device))
+            loss = cross_func(logits, labels)
+            if loss.dim() != 0:
+                loss = loss.mean()
+        else:
+            loss = torch.tensor(0.0, device=logits.device)
+        return (loss, outputs) if return_outputs else loss
+    
+evidence_trainer = myTrainer(
+    model,
+    evidence_training_args,
+    train_dataset=fever_train_dataset,
+    eval_dataset=fever_validation_dataset,
+    tokenizer=evidence_tokenization,
+    compute_metrics=evidence_compute_metrics,
+)
+
+evidence_trainer()
+"""Now that we have trained the model, we will begin to save. We can't save it the regular way, so
+we have to use the pytorch checkpoint save
+REMINDER: In order to use the model for a test or anywhere else, you have to replicate the architecture of the model
+Which is class above."""
+torch.save(model.state_dict(),"TwoTask_Model_1.pt")
+news_tokenizer.save_pretrained("news_tokenizer/")
+evidence_tokenization.save_pretrained("evidence/")
+news_training_args.save_pretrained("news_training_args.bin")
+evidence_training_args.save_pretrained("evidence_training_args.bin")
 
 
 
