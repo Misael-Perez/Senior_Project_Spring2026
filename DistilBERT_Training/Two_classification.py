@@ -165,6 +165,7 @@ label_map={
     "NOT ENOUGH INFO": 2
 }
 #using the functions, we map them
+feverDataset=feverDataset[:2000]
 feverDataset=feverDataset.map(evidence_tokenization, batched=True)
 feverDataset=feverDataset.map(map_labels, batched=True)
 
