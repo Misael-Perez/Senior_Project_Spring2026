@@ -32,7 +32,7 @@ tokenizer=AutoTokenizer.from_pretrained(checkpoint)
 
 def news_tokenizer(dataset):
     return tokenizer(
-        dataset["title"], dataset["text"], truncation=True, max_length=512
+        dataset["title"], dataset["text"], truncation=True,padding="max_length", max_length=512
     )
     
 def evidence_tokenization(dataset):
