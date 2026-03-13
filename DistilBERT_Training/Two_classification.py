@@ -210,6 +210,7 @@ news_training_args= TrainingArguments(
     save_strategy="epoch",
     logging_strategy="epoch",
     load_best_model_at_end=True,
+    remove_unused_columns=False
 )
 #task2 Arguments
 evidence_training_args=TrainingArguments(
