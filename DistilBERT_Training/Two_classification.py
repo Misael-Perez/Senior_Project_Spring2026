@@ -23,43 +23,6 @@ First we will create our custom model before training.
 Reminder, theoretically this model can be used for student model from BERT. However, because it is a two-head classification model,
 you need to use a GPU based model like BERT
 """
-class two_TaskModel(nn.Module):
-    #Let's build our constructor
-    #let's put a place holder for the model_name
-    def __init__(self,model_name):
-        super(two_TaskModel,self).__init__()
-        #load the headless Model
-        self.encoder = AutoModel.from_pretrained(model_name)
-        #Load the number of hidden size of distilbert or RoBERTa
-        hidden_size = self.encoder.config.hidden_size
-        #We will create our outputs for the fake/real news, it is similar to the num_label
-        self.real_or_fake= nn.Linear(hidden_size,2)
-        #Same goes for the fever dataset
-        self.evidence_based= nn.Linear(hidden_size,3)
-        #To prevent overfitting we will drop some neurons during training.
-        self.dropout= nn.Dropout(0.3)
-    
-    def forward(self,input_ids,attention_mask,task,labels=None):
-        outputs=self.encoder(
-            input_ids=input_ids,
-            attention_mask=attention_mask
-        )
-        
-        cls_outputs= outputs.last_hidden_state[:,0]
-        cls_output= self.dropout(cls_outputs)
-        
-        #The following lines of code will decide which head to use
-        if task=="News":
-            logits= self.real_or_fake(cls_output)
-            loss_fn= nn.CrossEntropyLoss()
-        elif task == "evidence":
-            logits = self.evidence_based(cls_output)
-            loss_fn = nn.CrossEntropyLoss(weight=class_weights)
-        else:
-            raise ValueError("Please select the right task")
-        loss=None
-        return {"loss": loss, "logits": logits}
-    
 def map_labels(labels):
     return {"label": [label_map[m] for m in labels["label"]]}
 
@@ -184,6 +147,46 @@ refutes_count=fever_train_dataset["label"].count(1)
 nei_count=fever_train_dataset["label"].count(2)
 fever_train_dataset=fever_train_dataset.select_columns(["input_ids", "attention_mask", "label"])
 class_weights=torch.tensor([1.0/supports_count, 1.0/refutes_count, 1.0/nei_count])  
+
+class two_TaskModel(nn.Module):
+    #Let's build our constructor
+    #let's put a place holder for the model_name
+    def __init__(self,model_name):
+        super(two_TaskModel,self).__init__()
+        #load the headless Model
+        self.encoder = AutoModel.from_pretrained(model_name)
+        #Load the number of hidden size of distilbert or RoBERTa
+        hidden_size = self.encoder.config.hidden_size
+        #We will create our outputs for the fake/real news, it is similar to the num_label
+        self.real_or_fake= nn.Linear(hidden_size,2)
+        #Same goes for the fever dataset
+        self.evidence_based= nn.Linear(hidden_size,3)
+        #To prevent overfitting we will drop some neurons during training.
+        self.dropout= nn.Dropout(0.3)
+    
+    def forward(self,input_ids,attention_mask,task,labels=None):
+        outputs=self.encoder(
+            input_ids=input_ids,
+            attention_mask=attention_mask
+        )
+        
+        cls_outputs= outputs.last_hidden_state[:,0,:]
+        cls_output= self.dropout(cls_outputs)
+        
+        #The following lines of code will decide which head to use
+        if task=="News":
+            logits= self.real_or_fake(cls_output)
+            loss_fn= nn.CrossEntropyLoss()
+        elif task == "evidence":
+            logits = self.evidence_based(cls_output)
+            loss_fn = nn.CrossEntropyLoss(weight=class_weights)
+        else:
+            raise ValueError("Please select the right task")
+        loss=None
+        if labels is not None:
+            loss= loss_fn(logits,labels)
+        return {"loss": loss, "logits": logits}
+    
 
 
 #We will now load our verison of the model
