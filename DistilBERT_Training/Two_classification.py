@@ -105,14 +105,17 @@ eval_data=pd.read_csv("eval.csv")
 test_data=pd.read_csv("test.csv")
 id2label= {0: "Fake", 1:"Real"}
 #Add a column named task
-train_data["task"]="News"
-eval_data["task"]="News"
-test_data["task"]="News"
 #Let's turn it into a dataset for the model
 train_data= Dataset.from_pandas(train_data)
 eval_data= Dataset.from_pandas(eval_data)
 test_data=Dataset.from_pandas(test_data)
 #map the tokenizer
+def addcolumn1(data):
+    data["task"]="News"
+    return data
+train_data=train_data.map(addcolumn1)
+eval_data= eval_data.map(addcolumn1)
+test_data=test_data.map(addcolumn1)
 train_token=train_data.map(news_tokenizer, batched=True)
 eval_token= eval_data.map(news_tokenizer, batched=True)
 test_token= test_data.map(news_tokenizer, batched=True)
