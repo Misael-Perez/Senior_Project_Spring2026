@@ -62,13 +62,17 @@ class two_TaskModel(nn.Module):
     
 def map_labels(labels):
     return {"label": [label_map[m] for m in labels["label"]]}
-    
-def news_tokenizer(dataset,tokenizer):
+
+# list your tokenizer here:
+checkpoint="roberta-base"
+tokenizer=AutoTokenizer.from_pretrained(checkpoint)
+
+def news_tokenizer(dataset):
     return tokenizer(
         dataset["title"], dataset["text"], truncation=True, max_length=512
     )
     
-def evidence_tokenization(dataset,tokenizer):
+def evidence_tokenization(dataset):
     evidences=[]
     for e in dataset["evidence"]:
         if len(e)>0:
@@ -131,6 +135,7 @@ def evidence_compute_metrics(eval_preds):
 To organize our datasets and the way we are going to modify them, we are going to group operations together
 Reminder, add a column named task for each of the datasets
 """
+
 #News articles data
 train_data= pd.read_csv("train.csv")
 eval_data=pd.read_csv("eval.csv")
