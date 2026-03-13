@@ -171,13 +171,13 @@ label_map={
     "NOT ENOUGH INFO": 2
 }
 #using the functions, we map them
-feverDataset=feverDataset[:2000]
+
 feverDataset=feverDataset.map(evidence_tokenization, batched=True)
 feverDataset=feverDataset.map(map_labels, batched=True)
 
-fever_train_dataset=feverDataset["train"]
-fever_validation_dataset=feverDataset["validation"] # will use to evaluate model
-fever_test_dataset=feverDataset["test"] #will use to test the model later
+fever_train_dataset=feverDataset["train"].select(range(2000))
+fever_validation_dataset=feverDataset["validation"].select(range(2000)) # will use to evaluate model
+fever_test_dataset=feverDataset["test"].select(range(2000)) #will use to test the model later
 
 supports_count=fever_train_dataset["label"].count(0)
 refutes_count=fever_train_dataset["label"].count(1)
