@@ -134,7 +134,10 @@ label_map={
     "NOT ENOUGH INFO": 2
 }
 #using the functions, we map them
-feverDataset["task"]= "evidence"
+def addcolumn(data):
+    data["task"]="evidence"
+    return data
+feverDataset= feverDataset.map(addcolumn)
 feverDataset=feverDataset.map(evidence_tokenization, batched=True)
 feverDataset=feverDataset.map(map_labels, batched=True)
 
