@@ -245,7 +245,7 @@ news_trainer=Trainer(
     processing_class=news_tokenizer,
     compute_metrics=news_compute_metrics,
 )
-
+two_TaskModel.forward(task="News")
 news_trainer.train()
 
 class myTrainer(Trainer):
