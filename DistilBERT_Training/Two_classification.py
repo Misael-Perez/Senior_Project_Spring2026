@@ -170,10 +170,11 @@ class two_TaskModel(nn.Module):
         self.real_or_fake= nn.Linear(hidden_size,2)
         #Same goes for the fever dataset
         self.evidence_based= nn.Linear(hidden_size,3)
+        self.current_task=None
         #To prevent overfitting we will drop some neurons during training.
         self.dropout= nn.Dropout(0.3)
     
-    def forward(self,input_ids,attention_mask,task,labels=None):
+    def forward(self,input_ids,attention_mask,labels=None):
         outputs=self.encoder(
             input_ids=input_ids,
             attention_mask=attention_mask
@@ -183,10 +184,10 @@ class two_TaskModel(nn.Module):
         cls_output= self.dropout(cls_outputs)
         
         #The following lines of code will decide which head to use
-        if task=="News":
+        if self.current_task=="News":
             logits= self.real_or_fake(cls_output)
             loss_fn= nn.CrossEntropyLoss()
-        elif task == "evidence":
+        elif self.current_task == "evidence":
             logits = self.evidence_based(cls_output)
             loss_fn = nn.CrossEntropyLoss(weight=class_weights)
         else:
@@ -245,7 +246,7 @@ news_trainer=Trainer(
     processing_class=news_tokenizer,
     compute_metrics=news_compute_metrics,
 )
-two_TaskModel.forward(task="News")
+model.current_task="News"
 news_trainer.train()
 
 class myTrainer(Trainer):
@@ -270,7 +271,7 @@ evidence_trainer = myTrainer(
     tokenizer=evidence_tokenization,
     compute_metrics=evidence_compute_metrics,
 )
-
+model.current_task="evidence"
 evidence_trainer()
 """Now that we have trained the model, we will begin to save. We can't save it the regular way, so
 we have to use the pytorch checkpoint save
