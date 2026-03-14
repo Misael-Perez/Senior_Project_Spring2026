@@ -142,7 +142,7 @@ label_map={
 def addcolumn(data):
     data["task"]="evidence"
     return data
-feverDataset= feverDataset.map(addcolumn)
+
 feverDataset=feverDataset.map(evidence_tokenization, batched=True)
 feverDataset=feverDataset.map(map_labels, batched=True)
 feverDataset= feverDataset.map(addcolumn)
@@ -245,6 +245,7 @@ news_trainer=Trainer(
     processing_class=news_tokenizer,
     compute_metrics=news_compute_metrics,
 )
+
 news_trainer.train()
 
 class myTrainer(Trainer):
