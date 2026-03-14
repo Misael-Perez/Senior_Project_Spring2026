@@ -2,6 +2,7 @@ from datasets import load_dataset
 from transformers import (AutoTokenizer, AutoModel,AutoModelForSequenceClassification,
     Trainer, TrainingArguments)
 import torch
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
@@ -156,6 +157,7 @@ refutes_count=fever_train_dataset["label"].count(1)
 nei_count=fever_train_dataset["label"].count(2)
 fever_train_dataset=fever_train_dataset.select_columns(["input_ids", "attention_mask", "label"])
 class_weights=torch.tensor([1.0/supports_count, 1.0/refutes_count, 1.0/nei_count])  
+class_weights=class_weights.to(device)
 
 class two_TaskModel(nn.Module):
     #Let's build our constructor
@@ -201,6 +203,7 @@ class two_TaskModel(nn.Module):
 
 #We will now load our verison of the model
 model= two_TaskModel("roberta-base")
+model.to(device)
 
 """The following section would be about the training arguments and their trainer.
 We would be training the model sequentially. So, first train on task 1 and then on task 2."""
@@ -272,7 +275,7 @@ evidence_trainer = myTrainer(
     compute_metrics=evidence_compute_metrics,
 )
 model.current_task="evidence"
-evidence_trainer()
+evidence_trainer.train()
 """Now that we have trained the model, we will begin to save. We can't save it the regular way, so
 we have to use the pytorch checkpoint save
 REMINDER: In order to use the model for a test or anywhere else, you have to replicate the architecture of the model
