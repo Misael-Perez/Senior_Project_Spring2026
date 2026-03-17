@@ -247,7 +247,7 @@ news_trainer=Trainer(
     args=news_training_args,
     train_dataset=train_token,
     eval_dataset=eval_token,
-    tokenizer=tokenizer,
+    processing_class=tokenizer,
     compute_metrics=news_compute_metrics,
 )
 model.current_task="News"
