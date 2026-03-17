@@ -101,9 +101,9 @@ Reminder, add a column named task for each of the datasets
 """
 
 #News articles data
-train_data= pd.read_csv("train.csv")
-eval_data=pd.read_csv("eval.csv")
-test_data=pd.read_csv("test.csv")
+train_data= pd.read_csv("train.csv", nrows=1000)
+eval_data=pd.read_csv("eval.csv", nrows=1000)
+test_data=pd.read_csv("test.csv",nrows=1000)
 id2label= {0: "Fake", 1:"Real"}
 #Add a column named task
 #Let's turn it into a dataset for the model
