@@ -247,12 +247,12 @@ news_trainer=Trainer(
     args=news_training_args,
     train_dataset=train_token,
     eval_dataset=eval_token,
-    processing_class=news_tokenizer,
+    tokenizer=tokenizer,
     compute_metrics=news_compute_metrics,
 )
 model.current_task="News"
 news_trainer.train()
-news_tokenizer.save_pretrained("news_tokenizer/")
+tokenizer.save_pretrained("news_tokenizer/")
 news_training_args.save_pretrained("news_training_args.bin")
 
 class myTrainer(Trainer):
@@ -269,8 +269,6 @@ class myTrainer(Trainer):
             loss = torch.tensor(0.0, device=logits.device)
         return (loss, outputs) if return_outputs else loss
 
-checkpoint="roberta-base"
-tokenizer=AutoTokenizer.from_pretrained(checkpoint)
 evidence_trainer = myTrainer(
     model,
     evidence_training_args,
@@ -287,10 +285,14 @@ REMINDER: In order to use the model for a test or anywhere else, you have to rep
 Which is class above."""
 torch.save(model.state_dict(),"TwoTask_Model_1.pt")
 
-evidence_tokenization.save_pretrained("evidence/")
+tokenizer.save_pretrained("evidence/")
 
 evidence_training_args.save_pretrained("evidence_training_args.bin")
-
+"""Now that we have trained the model, we will begin to save. We can't save it the regular way, so
+we have to use the pytorch checkpoint save
+REMINDER: In order to use the model for a test or anywhere else, you have to replicate the architecture of the model
+Which is class above."""
+torch.save(model.state_dict(),"TwoTask_Model_1.pt")
 
 
 
