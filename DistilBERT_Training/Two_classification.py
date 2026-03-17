@@ -33,7 +33,7 @@ tokenizer=AutoTokenizer.from_pretrained(checkpoint)
 
 def news_tokenizer(dataset):
     return tokenizer(
-        dataset["title"], dataset["text"], truncation=True,padding="max_length", max_length=512
+        dataset["title"], dataset["text"], truncation=True,padding=True, max_length=512
     )
     
 def evidence_tokenization(dataset):
@@ -49,7 +49,7 @@ def evidence_tokenization(dataset):
         dataset["claim"],
         evidences,
         truncation=True,
-        padding="max_length",
+        padding=True,
         max_length=512
     )
 def map_labels(labels):
@@ -251,6 +251,8 @@ news_trainer=Trainer(
 )
 model.current_task="News"
 news_trainer.train()
+news_tokenizer.save_pretrained("news_tokenizer/")
+news_training_args.save_pretrained("news_training_args.bin")
 
 class myTrainer(Trainer):
     def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
@@ -281,9 +283,9 @@ we have to use the pytorch checkpoint save
 REMINDER: In order to use the model for a test or anywhere else, you have to replicate the architecture of the model
 Which is class above."""
 torch.save(model.state_dict(),"TwoTask_Model_1.pt")
-news_tokenizer.save_pretrained("news_tokenizer/")
+
 evidence_tokenization.save_pretrained("evidence/")
-news_training_args.save_pretrained("news_training_args.bin")
+
 evidence_training_args.save_pretrained("evidence_training_args.bin")
 
 
