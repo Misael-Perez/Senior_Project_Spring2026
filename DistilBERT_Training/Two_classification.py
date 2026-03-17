@@ -247,7 +247,7 @@ news_trainer=Trainer(
     args=news_training_args,
     train_dataset=train_token,
     eval_dataset=eval_token,
-    tokenizer=tokenizer,
+    processing_class=tokenizer,
     compute_metrics=news_compute_metrics,
 )
 model.current_task="News"
@@ -274,7 +274,7 @@ evidence_trainer = myTrainer(
     evidence_training_args,
     train_dataset=fever_train_dataset,
     eval_dataset=fever_validation_dataset,
-    tokenizer=tokenizer,
+    processing_class=tokenizer,
     compute_metrics=evidence_compute_metrics,
 )
 model.current_task="evidence"
