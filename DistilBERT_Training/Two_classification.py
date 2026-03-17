@@ -241,13 +241,13 @@ evidence_training_args=TrainingArguments(
     greater_is_better=True
 )
 #news trainer
-tokenizer= AutoTokenizer.from_pretrained("distilbert-base-uncased")
+
 news_trainer=Trainer(
     model=model,
     args=news_training_args,
     train_dataset=train_token,
     eval_dataset=eval_token,
-    processing_class=tokenizer,
+    processing_class=news_tokenizer,
     compute_metrics=news_compute_metrics,
 )
 model.current_task="News"
