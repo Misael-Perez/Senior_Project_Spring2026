@@ -241,12 +241,13 @@ evidence_training_args=TrainingArguments(
     greater_is_better=True
 )
 #news trainer
+tokenizer= AutoTokenizer.from_pretrained("distilbert-base-uncased")
 news_trainer=Trainer(
     model=model,
     args=news_training_args,
     train_dataset=train_token,
     eval_dataset=eval_token,
-    tokenizer=news_tokenizer,
+    tokenizer=tokenizer,
     compute_metrics=news_compute_metrics,
 )
 model.current_task="News"
@@ -267,13 +268,15 @@ class myTrainer(Trainer):
         else:
             loss = torch.tensor(0.0, device=logits.device)
         return (loss, outputs) if return_outputs else loss
-    
+
+checkpoint="roberta-base"
+tokenizer=AutoTokenizer.from_pretrained(checkpoint)
 evidence_trainer = myTrainer(
     model,
     evidence_training_args,
     train_dataset=fever_train_dataset,
     eval_dataset=fever_validation_dataset,
-    tokenizer=evidence_tokenization,
+    tokenizer=tokenizer,
     compute_metrics=evidence_compute_metrics,
 )
 model.current_task="evidence"
