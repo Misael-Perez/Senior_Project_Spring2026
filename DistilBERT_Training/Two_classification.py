@@ -251,7 +251,7 @@ news_trainer=Trainer(
 model.current_task="News"
 news_trainer.train()
 tokenizer.save_pretrained("news_tokenizer/")
-news_training_args.to_json_file("news_training_args.json")
+
 
 class myTrainer(Trainer):
     def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
@@ -285,7 +285,7 @@ torch.save(model.state_dict(),"TwoTask_Model_1.pt")
 
 tokenizer.save_pretrained("evidence/")
 
-evidence_training_args.to_json_file("evidence_training_args.json")
+
 """Now that we have trained the model, we will begin to save. We can't save it the regular way, so
 we have to use the pytorch checkpoint save
 REMINDER: In order to use the model for a test or anywhere else, you have to replicate the architecture of the model
