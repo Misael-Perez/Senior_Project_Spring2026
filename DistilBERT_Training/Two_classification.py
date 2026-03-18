@@ -257,7 +257,7 @@ class myTrainer(Trainer):
     def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
         labels=inputs.get("labels")
         outputs=model(**inputs)        
-        logits=outputs.logits
+        logits=outputs["logits"]
         if labels is not None:
             cross_func = nn.CrossEntropyLoss(weight=class_weights.to(logits.device))
             loss = cross_func(logits, labels)
