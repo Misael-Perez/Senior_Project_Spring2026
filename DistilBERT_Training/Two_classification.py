@@ -103,31 +103,28 @@ Reminder, add a column named task for each of the datasets
 #News articles data
 train_data= pd.read_csv("train.csv", nrows=1000)
 eval_data=pd.read_csv("eval.csv", nrows=1000)
-test_data=pd.read_csv("test.csv",nrows=1000)
+
 id2label= {0: "Fake", 1:"Real"}
 #Add a column named task
 #Let's turn it into a dataset for the model
 train_data= Dataset.from_pandas(train_data)
 eval_data= Dataset.from_pandas(eval_data)
-test_data=Dataset.from_pandas(test_data)
+
 #map the tokenizer
-def addcolumn1(data):
-    data["task"]="News"
-    return data
 
 train_token=train_data.map(news_tokenizer, batched=True)
 eval_token= eval_data.map(news_tokenizer, batched=True)
-test_token= test_data.map(news_tokenizer, batched=True)
+
 
 
 #remove them
 train_token = train_token.remove_columns(["title","text"])
 eval_token = eval_token.remove_columns(["title","text"])
-test_token = test_token.remove_columns(["title","text"])
+
 #set them to torch format
 train_token.set_format("torch")
 eval_token.set_format("torch")
-test_token.set_format("torch")
+
 
 """The following part of the code is to prepare for the tokenization of the fever gold evidence data"""
 #We load the fever dataset along side witht the labels and tokenizers
