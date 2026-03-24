@@ -13,6 +13,7 @@ import evaluate
 from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
 from datasets import Dataset
+import json
 
 
 """ 
@@ -103,6 +104,7 @@ Reminder, add a column named task for each of the datasets
 #News articles data
 train_data= pd.read_csv("train.csv")
 eval_data=pd.read_csv("eval.csv")
+
 
 id2label= {0: "Fake", 1:"Real"}
 #Add a column named task
@@ -265,6 +267,31 @@ evidence_trainer = myTrainer(
 )
 model.current_task="evidence"
 evidence_trainer.train()
+
+testPredictions=evidence_trainer.predict(fever_test_dataset)
+print(dir(testPredictions))
+print(testPredictions.label_ids)
+print("---------------------")
+print(testPredictions.predictions)
+print("---------------------")
+print(testPredictions.metrics)
+# labels of testPredictions: 'count', 'index', 'label_ids', 'metrics', 'predictions'
+
+actual=testPredictions.label_ids
+preds=np.argmax(testPredictions.predictions, axis=1)
+
+df=pd.DataFrame({
+    "actual": actual,
+    "prediction": preds,
+    "result": (actual==preds)
+    })
+df.to_csv("TestResults_8.csv", index=False)
+print("METRICS: ", testPredictions.metrics)
+#print(df.head())
+
+with open('metrics.txt', 'w') as f:
+    f.write(json.dumps(testPredictions.metrics, indent=4))
+
 """Now that we have trained the model, we will begin to save. We can't save it the regular way, so
 we have to use the pytorch checkpoint save
 REMINDER: In order to use the model for a test or anywhere else, you have to replicate the architecture of the model
