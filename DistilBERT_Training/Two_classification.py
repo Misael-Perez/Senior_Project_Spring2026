@@ -101,8 +101,8 @@ Reminder, add a column named task for each of the datasets
 """
 
 #News articles data
-train_data= pd.read_csv("train.csv", nrows=1000)
-eval_data=pd.read_csv("eval.csv", nrows=1000)
+train_data= pd.read_csv("train.csv")
+eval_data=pd.read_csv("eval.csv")
 
 id2label= {0: "Fake", 1:"Real"}
 #Add a column named task
@@ -133,9 +133,9 @@ label_map={
 feverDataset=feverDataset.map(evidence_tokenization, batched=True)
 feverDataset=feverDataset.map(map_labels, batched=True)
 
-fever_train_dataset=feverDataset["train"].select(range(2000))
-fever_validation_dataset=feverDataset["validation"].select(range(2000)) # will use to evaluate model
-fever_test_dataset=feverDataset["test"].select(range(2000)) #will use to test the model later
+fever_train_dataset=feverDataset["train"]
+fever_validation_dataset=feverDataset["validation"] # will use to evaluate model
+fever_test_dataset=feverDataset["test"]#will use to test the model later
 
 supports_count=fever_train_dataset["label"].count(0)
 refutes_count=fever_train_dataset["label"].count(1)
