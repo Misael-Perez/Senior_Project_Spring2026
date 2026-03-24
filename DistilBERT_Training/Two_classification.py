@@ -109,14 +109,9 @@ id2label= {0: "Fake", 1:"Real"}
 #Let's turn it into a dataset for the model
 train_data= Dataset.from_pandas(train_data)
 eval_data= Dataset.from_pandas(eval_data)
-
 #map the tokenizer
-
 train_token=train_data.map(news_tokenizer, batched=True)
 eval_token= eval_data.map(news_tokenizer, batched=True)
-
-
-
 #remove them
 train_token = train_token.remove_columns(["title","text"])
 eval_token = eval_token.remove_columns(["title","text"])
@@ -135,13 +130,8 @@ label_map={
     "NOT ENOUGH INFO": 2
 }
 #using the functions, we map them
-def addcolumn(data):
-    data["task"]="evidence"
-    return data
-
 feverDataset=feverDataset.map(evidence_tokenization, batched=True)
 feverDataset=feverDataset.map(map_labels, batched=True)
-
 
 fever_train_dataset=feverDataset["train"].select(range(2000))
 fever_validation_dataset=feverDataset["validation"].select(range(2000)) # will use to evaluate model
@@ -150,6 +140,7 @@ fever_test_dataset=feverDataset["test"].select(range(2000)) #will use to test th
 supports_count=fever_train_dataset["label"].count(0)
 refutes_count=fever_train_dataset["label"].count(1)
 nei_count=fever_train_dataset["label"].count(2)
+
 fever_train_dataset=fever_train_dataset.select_columns(["input_ids", "attention_mask", "label"])
 class_weights=torch.tensor([1.0/supports_count, 1.0/refutes_count, 1.0/nei_count])  
 class_weights=class_weights.to(device)
@@ -278,16 +269,19 @@ evidence_trainer.train()
 we have to use the pytorch checkpoint save
 REMINDER: In order to use the model for a test or anywhere else, you have to replicate the architecture of the model
 Which is class above."""
-torch.save(model.state_dict(),"TwoTask_Model_1.pt")
 
-tokenizer.save_pretrained("evidence/")
+
+tokenizer.save_pretrained("evidence_tokenizer/")
 
 
 """Now that we have trained the model, we will begin to save. We can't save it the regular way, so
 we have to use the pytorch checkpoint save
 REMINDER: In order to use the model for a test or anywhere else, you have to replicate the architecture of the model
 Which is class above."""
-torch.save(model.state_dict(),"TwoTask_Model_1.pt")
+torch.save({
+    "Two_task_Model_1": model.state_dict(),
+    "class_weights": class_weights
+}, "TwoTask_Model_1_full.pt")
 
 
 

@@ -8,46 +8,10 @@ import evaluate
 from sklearn.metrics import confusion_matrix
 from datasets import load_dataset
 import numpy as np
-
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+checkpoint = torch.load("TwoTask_Model_1_full.pt", map_location=device)
 
-
-checkpoint="roberta-base"
-tokenizer=AutoTokenizer.from_pretrained(checkpoint)
-def evidence_tokenization(dataset):
-    evidences=[]
-    for e in dataset["evidence"]:
-        if len(e)>0:
-            text=" ".join([ev[2] for ev in e])
-        else:
-            text=""
-        evidences.append(text)
-
-    return tokenizer(
-        dataset["claim"],
-        evidences,
-        truncation=True,
-        padding=True,
-        max_length=512
-    )
-def map_labels(labels):
-    return {"label": [label_map[m] for m in labels["label"]]}
-feverDataset=load_dataset("copenlu/fever_gold_evidence")
-label_map={
-    "SUPPORTS": 0,
-    "REFUTES": 1,
-    "NOT ENOUGH INFO": 2
-}
-feverDataset=feverDataset.map(evidence_tokenization, batched=True)
-feverDataset=feverDataset.map(map_labels, batched=True)
-fever_train_dataset=feverDataset["train"].select(range(2000))
-fever_validation_dataset=feverDataset["validation"].select(range(2000)) # will use to evaluate model
-fever_test_dataset=feverDataset["test"].select(range(2000)) #will use to test the model later
-supports_count=fever_train_dataset["label"].count(0)
-refutes_count=fever_train_dataset["label"].count(1)
-nei_count=fever_train_dataset["label"].count(2)
-class_weights=torch.tensor([1.0/supports_count, 1.0/refutes_count, 1.0/nei_count])  
-class_weights=class_weights.to(device)
+class_weights = checkpoint["class_weights"].to(device)
 class two_TaskModel(nn.Module):
     #Let's build our constructor
     #let's put a place holder for the model_name
@@ -88,19 +52,17 @@ class two_TaskModel(nn.Module):
             loss= loss_fn(logits,labels)
         return {"loss": loss, "logits": logits}
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 model = two_TaskModel("roberta-base")
-model.load_state_dict(torch.load("TwoTask_Model_1.pt", map_location=device))
+model.load_state_dict(checkpoint["model_state_dict"])
+class_weights = checkpoint["class_weights"].to(device)
 model.to(device)
 model.eval()
-
-from transformers import AutoTokenizer
 
 news_tokenizer = AutoTokenizer.from_pretrained("news_tokenizer/")
 evidence_tokenizer= AutoTokenizer.from_pretrained("evidence/")
 
-    
 test_data=pd.read_csv("test.csv")
 test_data=Dataset.from_pandas(test_data)
 def preprocess_function(examples):
