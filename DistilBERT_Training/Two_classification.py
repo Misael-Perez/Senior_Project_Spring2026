@@ -241,7 +241,12 @@ news_trainer=Trainer(
 model.current_task="News"
 news_trainer.train()
 tokenizer.save_pretrained("news_tokenizer/")
+for param in model.encoder.parameters():
+    param.requires_grad = False
 
+for name, param in model.named_parameters():
+    if param.requires_grad:
+        print("TRAINING:", name)
 
 class myTrainer(Trainer):
     def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
@@ -285,11 +290,11 @@ df=pd.DataFrame({
     "prediction": preds,
     "result": (actual==preds)
     })
-df.to_csv("TestResults_8.csv", index=False)
+df.to_csv("Freeze_results.csv", index=False)
 print("METRICS: ", testPredictions.metrics)
 #print(df.head())
 
-with open('metrics.txt', 'w') as f:
+with open('metrics_freeze.txt', 'w') as f:
     f.write(json.dumps(testPredictions.metrics, indent=4))
 
 """Now that we have trained the model, we will begin to save. We can't save it the regular way, so
@@ -308,7 +313,7 @@ Which is class above."""
 torch.save({
     "Two_task_Model_1": model.state_dict(),
     "class_weights": class_weights
-}, "TwoTask_Model_1_full.pt")
+}, "TwoTask_Model_1_full_SEQ_freeze.pt")
 
 
 
