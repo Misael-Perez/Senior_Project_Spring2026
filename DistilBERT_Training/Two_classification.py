@@ -136,14 +136,20 @@ feverDataset=feverDataset.map(evidence_tokenization, batched=True)
 feverDataset=feverDataset.map(map_labels, batched=True)
 
 fever_train_dataset=feverDataset["train"]
+fever_train_dataset=fever_train_dataset.rename_column(columns={"label":"labels"})
+
 fever_validation_dataset=feverDataset["validation"] # will use to evaluate model
+fever_validation_dataset=fever_validation_dataset.rename_column(columns={"label":"labels"})
+
 fever_test_dataset=feverDataset["test"]#will use to test the model later
+fever_test_dataset=fever_test_dataset.rename_column(columns={"label":"labels"})
 
-supports_count=fever_train_dataset["label"].count(0)
-refutes_count=fever_train_dataset["label"].count(1)
-nei_count=fever_train_dataset["label"].count(2)
 
-fever_train_dataset=fever_train_dataset.select_columns(["input_ids", "attention_mask", "label"])
+supports_count=fever_train_dataset["labels"].count(0)
+refutes_count=fever_train_dataset["labels"].count(1)
+nei_count=fever_train_dataset["labels"].count(2)
+
+fever_train_dataset=fever_train_dataset.select_columns(["input_ids", "attention_mask", "labels"])
 class_weights=torch.tensor([1.0/supports_count, 1.0/refutes_count, 1.0/nei_count])  
 class_weights=class_weights.to(device)
 
@@ -215,15 +221,15 @@ evidence_training_args=TrainingArguments(
     "Two_Task_Model_1_evidence",
     eval_strategy="steps",
     eval_steps=1000,
-    learning_rate=2e-5,                 
+    learning_rate=1e-3,                 
     per_device_train_batch_size=32,
     per_device_eval_batch_size=256,     
-    num_train_epochs=3,                 
+    num_train_epochs=5,                 
     weight_decay=0.01,
     logging_steps=500,   
     save_strategy="steps",
     save_steps=1000,                     
-    warmup_ratio=0.1,
+    warmup_ratio=0.0,
     load_best_model_at_end=True,
     metric_for_best_model="macro_f1",
     greater_is_better=True
@@ -290,11 +296,11 @@ df=pd.DataFrame({
     "prediction": preds,
     "result": (actual==preds)
     })
-df.to_csv("Freeze_results.csv", index=False)
+df.to_csv("Freeze_results_2.csv", index=False)
 print("METRICS: ", testPredictions.metrics)
 #print(df.head())
 
-with open('metrics_freeze.txt', 'w') as f:
+with open('metrics_freeze2.txt', 'w') as f:
     f.write(json.dumps(testPredictions.metrics, indent=4))
 
 """Now that we have trained the model, we will begin to save. We can't save it the regular way, so
@@ -313,7 +319,7 @@ Which is class above."""
 torch.save({
     "Two_task_Model_1": model.state_dict(),
     "class_weights": class_weights
-}, "TwoTask_Model_1_full_SEQ_freeze.pt")
+}, "TwoTask_Model_1_full_SEQ_freeze_2.pt")
 
 
 
