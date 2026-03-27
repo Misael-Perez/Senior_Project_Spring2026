@@ -33,7 +33,7 @@ tokenizer=AutoTokenizer.from_pretrained(checkpoint)
 
 def news_tokenizer(dataset):
     return tokenizer(
-        dataset["title"], dataset["text"], truncation=True,padding=True, max_length=512
+        dataset["title"], dataset["text"], truncation=True,padding="max_length", max_length=512
     )
     
 def evidence_tokenization(dataset):
@@ -49,7 +49,7 @@ def evidence_tokenization(dataset):
         dataset["claim"],
         evidences,
         truncation=True,
-        padding=True,
+        padding="max_length",
         max_length=512
     )
 def map_labels(labels):
