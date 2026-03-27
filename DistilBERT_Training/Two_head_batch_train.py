@@ -218,6 +218,7 @@ We would be training the model sequentially. So, first train on task 1 and then 
 main_args= TrainingArguments(
     "Single_trained_multiModel",
     learning_rate=2e-5,
+    eval_strategy="steps",
     per_device_train_batch_size=16,
     per_device_eval_batch_size=256,
     num_train_epochs=4,
