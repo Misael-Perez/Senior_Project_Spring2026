@@ -252,6 +252,7 @@ Trainer = Two_Task_Trainer(
     model,
     main_args,
     train_dataset=training_data,
+    eval_dataset=fever_validation_dataset,
     processing_class=tokenizer,
 )
 model.current_task="evidence"
