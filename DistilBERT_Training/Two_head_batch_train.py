@@ -111,7 +111,7 @@ id2label= {0: "Fake", 1:"Real"}
 train_data= Dataset.from_pandas(train_data)
 eval_data= Dataset.from_pandas(eval_data)
 def add_task_news(data_set):
-    data_set["task"]="News"
+    data_set["task"]=0#News will be 0
     return data_set
 #map the tokenizer
 train_token=train_data.map(news_tokenizer, batched=True)
@@ -140,7 +140,7 @@ label_map={
 feverDataset=feverDataset.map(evidence_tokenization, batched=True)
 feverDataset=feverDataset.map(map_labels, batched=True)
 def add_task_evidence(data_set):
-    data_set["task"]="evidence"
+    data_set["task"]=1#evidence will be 1
     return data_set
 
 fever_train_dataset=feverDataset["train"]
@@ -192,10 +192,10 @@ class two_TaskModel(nn.Module):
         cls_output= self.dropout(cls_outputs)
         
         #The following lines of code will decide which head to use
-        if task=="News":
+        if task==0:
             logits= self.real_or_fake(cls_output)
             loss_fn= nn.CrossEntropyLoss()
-        elif task == "evidence":
+        elif task == 1:
             logits = self.evidence_based(cls_output)
             loss_fn = nn.CrossEntropyLoss(weight=class_weights)
         else:
