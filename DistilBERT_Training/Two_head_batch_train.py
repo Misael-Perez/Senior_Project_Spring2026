@@ -1,4 +1,4 @@
-from datasets import load_dataset
+from datasets import load_dataset, concatenate_datasets
 from transformers import (AutoTokenizer, AutoModel,AutoModelForSequenceClassification,
     Trainer, TrainingArguments)
 import torch
@@ -110,9 +110,15 @@ id2label= {0: "Fake", 1:"Real"}
 #Let's turn it into a dataset for the model
 train_data= Dataset.from_pandas(train_data)
 eval_data= Dataset.from_pandas(eval_data)
+def add_task_news(data_set):
+    data_set["task"]="News"
+    return data_set
 #map the tokenizer
 train_token=train_data.map(news_tokenizer, batched=True)
 eval_token= eval_data.map(news_tokenizer, batched=True)
+#add the task for training
+train_token=train_token.map(add_task_news)
+eval_token=eval_token.map(add_task_news)
 #remove them
 train_token = train_token.remove_columns(["title","text"])
 eval_token = eval_token.remove_columns(["title","text"])
@@ -133,24 +139,31 @@ label_map={
 #using the functions, we map them
 feverDataset=feverDataset.map(evidence_tokenization, batched=True)
 feverDataset=feverDataset.map(map_labels, batched=True)
+def add_task_evidence(data_set):
+    data_set["task"]="evidence"
+    return data_set
 
 fever_train_dataset=feverDataset["train"]
 fever_train_dataset=fever_train_dataset.rename_column(columns={"label":"labels"})
+fever_train_dataset=fever_train_dataset.map(add_task_evidence)
 
 fever_validation_dataset=feverDataset["validation"] # will use to evaluate model
 fever_validation_dataset=fever_validation_dataset.rename_column(columns={"label":"labels"})
+fever_validation_dataset=fever_validation_dataset.map(add_task_evidence)
 
 fever_test_dataset=feverDataset["test"]#will use to test the model later
 fever_test_dataset=fever_test_dataset.rename_column(columns={"label":"labels"})
-
+fever_test_dataset=fever_test_dataset.map(add_task_evidence)
 
 supports_count=fever_train_dataset["labels"].count(0)
 refutes_count=fever_train_dataset["labels"].count(1)
 nei_count=fever_train_dataset["labels"].count(2)
 
-fever_train_dataset=fever_train_dataset.select_columns(["input_ids", "attention_mask", "labels"])
+fever_train_dataset=fever_train_dataset.select_columns(["input_ids", "attention_mask", "labels","task"])
 class_weights=torch.tensor([1.0/supports_count, 1.0/refutes_count, 1.0/nei_count])  
 class_weights=class_weights.to(device)
+
+#combine the datasets
 
 class two_TaskModel(nn.Module):
     #Let's build our constructor
@@ -165,11 +178,11 @@ class two_TaskModel(nn.Module):
         self.real_or_fake= nn.Linear(hidden_size,2)
         #Same goes for the fever dataset
         self.evidence_based= nn.Linear(hidden_size,3)
-        self.current_task=None
+        #self.current_task=None
         #To prevent overfitting we will drop some neurons during training.
         self.dropout= nn.Dropout(0.3)
     
-    def forward(self,input_ids,attention_mask,labels=None):
+    def forward(self,input_ids,attention_mask,labels=None,task=None):
         outputs=self.encoder(
             input_ids=input_ids,
             attention_mask=attention_mask
@@ -179,10 +192,10 @@ class two_TaskModel(nn.Module):
         cls_output= self.dropout(cls_outputs)
         
         #The following lines of code will decide which head to use
-        if self.current_task=="News":
+        if task=="News":
             logits= self.real_or_fake(cls_output)
             loss_fn= nn.CrossEntropyLoss()
-        elif self.current_task == "evidence":
+        elif task == "evidence":
             logits = self.evidence_based(cls_output)
             loss_fn = nn.CrossEntropyLoss(weight=class_weights)
         else:
@@ -193,113 +206,80 @@ class two_TaskModel(nn.Module):
         return {"loss": loss, "logits": logits}
     
 
-
+#We will now combine the dataset so that it would only be one single training session.
+training_data=concatenate_datasets([train_token,fever_train_dataset])
 #We will now load our verison of the model
 model= two_TaskModel("roberta-base")
 model.to(device)
 
 """The following section would be about the training arguments and their trainer.
 We would be training the model sequentially. So, first train on task 1 and then on task 2."""
-#task1 Arguments
-news_training_args= TrainingArguments(
-    output_dir="Two_Task_Model_1_news",
-    learning_rate=1e-3,
+#One main training arguments
+main_args= TrainingArguments(
+    "Single_trained_multiModel",
+    learning_rate=2e-5,
     per_device_train_batch_size=16,
-    gradient_accumulation_steps=4, #Changed because it doesn't require a large number for a small portion
-    per_device_eval_batch_size=16,
-    num_train_epochs=3,
+    num_train_epochs=4,
     weight_decay=0.01,
-    eval_strategy="epoch",
-    save_strategy="epoch",
-    logging_strategy="epoch",
-    load_best_model_at_end=True,
-    remove_unused_columns=False
-)
-#task2 Arguments
-evidence_training_args=TrainingArguments(
-    "Two_Task_Model_1_evidence",
-    eval_strategy="steps",
-    eval_steps=1000,
-    learning_rate=1e-3,                 
-    per_device_train_batch_size=64,
-    per_device_eval_batch_size=256,     
-    num_train_epochs=5,                 
-    weight_decay=0.01,
-    logging_steps=500,   
-    save_strategy="steps",
-    save_steps=1000,                     
-    warmup_ratio=0.0,
     load_best_model_at_end=True,
     metric_for_best_model="macro_f1",
-    greater_is_better=True
+    greater_is_better=True,
+    remove_unused_columns=False
+    
 )
-#news trainer
 
-news_trainer=Trainer(
-    model=model,
-    args=news_training_args,
-    train_dataset=train_token,
-    eval_dataset=eval_token,
-    processing_class=tokenizer,
-    compute_metrics=news_compute_metrics,
-)
-model.current_task="News"
-news_trainer.train()
-tokenizer.save_pretrained("news_tokenizer/")
-for param in model.encoder.parameters():
-    param.requires_grad = False
 
-for name, param in model.named_parameters():
-    if param.requires_grad:
-        print("TRAINING:", name)
-
-class myTrainer(Trainer):
+class Two_Task_Trainer(Trainer):
     def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
+        task=inputs.pop("task")
         labels=inputs.get("labels")
-        outputs=model(**inputs)        
+        
+        outputs=model(**inputs, task=task)        
         logits=outputs["logits"]
-        if labels is not None:
-            cross_func = nn.CrossEntropyLoss(weight=class_weights.to(logits.device))
-            loss = cross_func(logits, labels)
-            if loss.dim() != 0:
-                loss = loss.mean()
+        if task=="News":
+            loss_fn=nn.CrossEntropyLoss()
         else:
-            loss = torch.tensor(0.0, device=logits.device)
+            loss_fn= nn.CrossEntropyLoss(weight=class_weights.to(logits.device))
+        loss= loss_fn(logits,labels)
         return (loss, outputs) if return_outputs else loss
 
-evidence_trainer = myTrainer(
+Trainer = Two_Task_Trainer(
     model,
-    evidence_training_args,
-    train_dataset=fever_train_dataset,
-    eval_dataset=fever_validation_dataset,
+    main_args,
+    train_dataset=training_data,
     processing_class=tokenizer,
-    compute_metrics=evidence_compute_metrics,
 )
 model.current_task="evidence"
-evidence_trainer.train()
+Trainer.train()
+#We will see individual evaluations
+news_eval= Trainer.evaluate(eval_dataset=eval_token)
+evidence_eval= Trainer.evaluate(eval_dataset=fever_validation_dataset)
 
-testPredictions=evidence_trainer.predict(fever_test_dataset)
+#Now, we will see the individual metrics of the predicts
+news_pred= Trainer.predict(eval_token)
+evidence_preds= Trainer.predict(fever_validation_dataset)
+news_results= news_compute_metrics((news_pred.predictions,news_pred.label_ids))
+evidence_result=evidence_compute_metrics((evidence_preds.predictions,evidence_preds.label_ids))
+
+
+
+
+
+
+
+
+testPredictions=Trainer.predict(fever_test_dataset)
 print(dir(testPredictions))
 print(testPredictions.label_ids)
 print("---------------------")
 print(testPredictions.predictions)
 print("---------------------")
 print(testPredictions.metrics)
-# labels of testPredictions: 'count', 'index', 'label_ids', 'metrics', 'predictions'
 
-actual=testPredictions.label_ids
-preds=np.argmax(testPredictions.predictions, axis=1)
-
-df=pd.DataFrame({
-    "actual": actual,
-    "prediction": preds,
-    "result": (actual==preds)
-    })
-df.to_csv("Freeze_results.csv", index=False)
 print("METRICS: ", testPredictions.metrics)
 #print(df.head())
 
-with open('metrics_freeze.txt', 'w') as f:
+with open('metrics_single_session.txt', 'w') as f:
     f.write(json.dumps(testPredictions.metrics, indent=4))
 
 """Now that we have trained the model, we will begin to save. We can't save it the regular way, so
@@ -308,7 +288,7 @@ REMINDER: In order to use the model for a test or anywhere else, you have to rep
 Which is class above."""
 
 
-tokenizer.save_pretrained("evidence_tokenizer/")
+tokenizer.save_pretrained("combined_tokenizer/")
 
 
 """Now that we have trained the model, we will begin to save. We can't save it the regular way, so
@@ -316,9 +296,9 @@ we have to use the pytorch checkpoint save
 REMINDER: In order to use the model for a test or anywhere else, you have to replicate the architecture of the model
 Which is class above."""
 torch.save({
-    "Two_task_Model_1": model.state_dict(),
+    "Two_task_single_session": model.state_dict(),
     "class_weights": class_weights
-}, "TwoTask_Model_1_full_SEQ_freeze.pt")
+}, "TwoTask_single_session.pt")
 
 
 
