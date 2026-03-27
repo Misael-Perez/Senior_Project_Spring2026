@@ -237,11 +237,12 @@ main_args= TrainingArguments(
 class Two_Task_Trainer(Trainer):
     def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
         task=inputs.pop("task")
+        task=task.item()
         labels=inputs.get("labels")
         
         outputs=model(**inputs, task=task)        
         logits=outputs["logits"]
-        if task=="News":
+        if task==0:
             loss_fn=nn.CrossEntropyLoss()
         else:
             loss_fn= nn.CrossEntropyLoss(weight=class_weights.to(logits.device))
