@@ -136,13 +136,13 @@ feverDataset=feverDataset.map(evidence_tokenization, batched=True)
 feverDataset=feverDataset.map(map_labels, batched=True)
 
 fever_train_dataset=feverDataset["train"]
-fever_train_dataset=fever_train_dataset.rename_column(columns={"label":"labels"})
+fever_train_dataset=fever_train_dataset.rename_column("label","labels")
 
 fever_validation_dataset=feverDataset["validation"] # will use to evaluate model
-fever_validation_dataset=fever_validation_dataset.rename_column(columns={"label":"labels"})
+fever_validation_dataset=fever_validation_dataset.rename_column("label","labels")
 
 fever_test_dataset=feverDataset["test"]#will use to test the model later
-fever_test_dataset=fever_test_dataset.rename_column(columns={"label":"labels"})
+fever_test_dataset=fever_test_dataset.rename_column("label","labels")
 
 
 supports_count=fever_train_dataset["labels"].count(0)
