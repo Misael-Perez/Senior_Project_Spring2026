@@ -56,7 +56,7 @@ class two_TaskModel(nn.Module):
 
 model = two_TaskModel("roberta-base")
 model.load_state_dict(checkpoint["model_state_dict"])
-class_weights = checkpoint["class_weights"].to(device)
+
 model.to(device)
 model.eval()
 
