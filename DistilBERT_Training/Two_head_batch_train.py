@@ -1,4 +1,4 @@
-from datasets import load_dataset, concatenate_datasets
+from datasets import load_dataset, concatenate_datasets, interleave_datasets
 from transformers import (AutoTokenizer, AutoModel,AutoModelForSequenceClassification,
     Trainer, TrainingArguments)
 import torch
@@ -52,9 +52,6 @@ def evidence_tokenization(dataset):
         padding="max_length",
         max_length=512
     )
-def map_labels(labels):
-    return {"label": [label_map[m] for m in labels["label"]]}
-
 #The following classes are for the compute metrics
 accuracy_metric= evaluate.load("accuracy")
 precision_metrics= evaluate.load("precision")
@@ -194,20 +191,16 @@ class two_TaskModel(nn.Module):
         #The following lines of code will decide which head to use
         if task==0:
             logits= self.real_or_fake(cls_output)
-            loss_fn= nn.CrossEntropyLoss()
         elif task == 1:
             logits = self.evidence_based(cls_output)
-            loss_fn = nn.CrossEntropyLoss(weight=class_weights)
         else:
             raise ValueError("Please select the right task")
-        loss=None
-        if labels is not None:
-            loss= loss_fn(logits,labels)
-        return {"loss": loss, "logits": logits}
+        
+        return {"logits": logits}
     
 
 #We will now combine the dataset so that it would only be one single training session.
-training_data=concatenate_datasets([train_token,fever_train_dataset])
+training_data=interleave_datasets([train_token,fever_train_dataset],probabilities=[0.5,0.5],seed=42)
 #We will now load our verison of the model
 model= two_TaskModel("roberta-base")
 model.to(device)
@@ -237,10 +230,9 @@ main_args= TrainingArguments(
 class Two_Task_Trainer(Trainer):
     def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
         task=inputs.pop("task")
-        task=task.item()
-        labels=inputs.get("labels")
-        
-        outputs=model(**inputs, task=task)        
+        labels=inputs.pop("labels")
+        task_id=task[0].item()
+        outputs=model(**inputs, task=task_id)        
         logits=outputs["logits"]
         if task==0:
             loss_fn=nn.CrossEntropyLoss()
