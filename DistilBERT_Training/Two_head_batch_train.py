@@ -234,7 +234,7 @@ class Two_Task_Trainer(Trainer):
         task_id=task[0].item()
         outputs=model(**inputs, task=task_id)        
         logits=outputs["logits"]
-        if task==0:
+        if task_id==0:
             loss_fn=nn.CrossEntropyLoss()
         else:
             loss_fn= nn.CrossEntropyLoss(weight=class_weights.to(logits.device))
