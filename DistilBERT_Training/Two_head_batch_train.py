@@ -230,6 +230,7 @@ main_args= TrainingArguments(
 class Two_Task_Trainer(Trainer):
     def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
         task=inputs.pop("task")
+        print(task)
         labels=inputs.pop("labels")
         task_id=task[0].item()
         outputs=model(**inputs, task=task_id)        
