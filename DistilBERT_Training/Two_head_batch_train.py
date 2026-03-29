@@ -257,17 +257,6 @@ class Two_Task_Trainer(Trainer):
         loss=loss/total_samples
         
         return loss
-        
-        
-        task_id=task[0].item()
-        outputs=model(**inputs, task=task_id)        
-        logits=outputs["logits"]
-        if task_id==0:
-            loss_fn=nn.CrossEntropyLoss()
-        else:
-            loss_fn= nn.CrossEntropyLoss(weight=class_weights.to(logits.device))
-        loss= loss_fn(logits,labels)
-        return (loss, outputs) if return_outputs else loss
 
 Trainer = Two_Task_Trainer(
     model,
@@ -276,16 +265,12 @@ Trainer = Two_Task_Trainer(
     eval_dataset=fever_validation_dataset,
     processing_class=tokenizer,
 )
-model.current_task="evidence"
-Trainer.train()
-#We will see individual evaluations
-news_eval= Trainer.evaluate(eval_dataset=eval_token)
-evidence_eval= Trainer.evaluate(eval_dataset=fever_validation_dataset)
 
+Trainer.train()
 #Now, we will see the individual metrics of the predicts
 news_pred= Trainer.predict(eval_token)
-evidence_preds= Trainer.predict(fever_validation_dataset)
 news_results= news_compute_metrics((news_pred.predictions,news_pred.label_ids))
+evidence_preds= Trainer.predict(fever_validation_dataset)
 evidence_result=evidence_compute_metrics((evidence_preds.predictions,evidence_preds.label_ids))
 
 
@@ -324,7 +309,9 @@ REMINDER: In order to use the model for a test or anywhere else, you have to rep
 Which is class above."""
 torch.save({
     "Two_task_single_session": model.state_dict(),
-    "class_weights": class_weights
+    "class_weights": class_weights,
+    "label_map":label_map,
+    "id2label":id2label
 }, "TwoTask_single_session.pt")
 
 
