@@ -248,7 +248,7 @@ class Two_Task_Trainer(Trainer):
             loss+=loss_news*label_news.size(0)
             total_samples+=label_news.size(0)
         if mask_evidence.any():
-            outputs_evidence=model(input_ids=input_ids[mask_evidence],attention_mask=attention_mask[mask_evidence,task=1])
+            outputs_evidence=model(input_ids=input_ids[mask_evidence],attention_mask=attention_mask[mask_evidence],task=1)
             logits_evidence= outputs_evidence["logits"]
             label_evidence=labels[mask_evidence]
             loss_evidence=nn.CrossEntropyLoss(weight=class_weights)(logits_evidence,label_evidence)
