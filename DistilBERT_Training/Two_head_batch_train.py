@@ -123,6 +123,7 @@ eval_token = eval_token.remove_columns(["title","text"])
 #set them to torch format
 train_token.set_format("torch")
 eval_token.set_format("torch")
+print(train_token.column_names)
 
 
 """The following part of the code is to prepare for the tokenization of the fever gold evidence data"""
@@ -143,20 +144,29 @@ def add_task_evidence(data_set):
 fever_train_dataset=feverDataset["train"]
 fever_train_dataset=fever_train_dataset.rename_column("label","labels")
 fever_train_dataset=fever_train_dataset.map(add_task_evidence)
-
+fever_train_dataset = fever_train_dataset.select_columns(
+    ["input_ids", "attention_mask", "labels", "task"]
+)
+print(fever_train_dataset.column_names)
 fever_validation_dataset=feverDataset["validation"] # will use to evaluate model
 fever_validation_dataset=fever_validation_dataset.rename_column("label","labels")
 fever_validation_dataset=fever_validation_dataset.map(add_task_evidence)
+fever_validation_dataset = fever_validation_dataset.select_columns(
+    ["input_ids", "attention_mask", "labels", "task"]
+)
 
 fever_test_dataset=feverDataset["test"]#will use to test the model later
 fever_test_dataset=fever_test_dataset.rename_column("label","labels")
 fever_test_dataset=fever_test_dataset.map(add_task_evidence)
+fever_test_dataset = fever_test_dataset.select_columns(
+    ["input_ids", "attention_mask", "labels", "task"]
+)
 
 supports_count=fever_train_dataset["labels"].count(0)
 refutes_count=fever_train_dataset["labels"].count(1)
 nei_count=fever_train_dataset["labels"].count(2)
 
-fever_train_dataset=fever_train_dataset.select_columns(["input_ids", "attention_mask", "labels","task"])
+
 class_weights=torch.tensor([1.0/supports_count, 1.0/refutes_count, 1.0/nei_count])  
 class_weights=class_weights.to(device)
 
