@@ -230,8 +230,8 @@ main_args= TrainingArguments(
     save_steps=1000,
     weight_decay=0.01,
     load_best_model_at_end=True,
-    metric_for_best_model="macro_f1",
-    greater_is_better=True,
+    metric_for_best_model="eval_loss",
+    greater_is_better=False,
     remove_unused_columns=False
     
 )
