@@ -87,9 +87,12 @@ def map_labels(labels):
 #loading the test dataset for the news head
 test_data=pd.read_csv("test.csv")
 test_data=Dataset.from_pandas(test_data)
-
+def add_task_news(data_set):
+    data_set["task"]=0#News will be 0
+    return data_set
 test_token= test_data.map(news_function, batched=True)
 test_token = test_token.remove_columns(["title","text"])
+test_token=test_token.map(add_task_news)
 test_token.set_format("torch")
 
 #loading the test dataset for the evidence head 
