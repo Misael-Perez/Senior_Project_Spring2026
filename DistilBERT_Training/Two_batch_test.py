@@ -40,11 +40,9 @@ class two_TaskModel(nn.Module):
         cls_output= self.dropout(cls_outputs)
         
         #The following lines of code will decide which head to use
-        mask_news=(task==0)
-        mask_evidence=(task==1)
-        if mask_news.any():
+        if (task==0):
             logits= self.real_or_fake(cls_output)
-        elif mask_evidence.any():
+        elif (task==1):
             logits = self.evidence_based(cls_output)
         else:
             raise ValueError("Please select the right task")
