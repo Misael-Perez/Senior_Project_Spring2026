@@ -206,6 +206,7 @@ labels= predictions.label_ids
 final_matrix= confusion_matrix(labels,pred)
 print(final_matrix)
 """
+"""
 evidence_trainer = Trainer(
     model=model,
     args=training_args,
@@ -227,7 +228,7 @@ print("---------------------")
 print(testPredictions.predictions)
 print("---------------------")
 print(testPredictions.metrics)
-
+"""
 #from this point, we are going to test on a different dataset
 #Let's load our data
 WEL_1_data= pd.read_csv("WEL1/Wel_PT1.csv")
