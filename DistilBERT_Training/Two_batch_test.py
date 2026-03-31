@@ -1,0 +1,165 @@
+from transformers import (AutoTokenizer, AutoModel,AutoModelForSequenceClassification,
+    Trainer, TrainingArguments)
+import torch.nn as nn
+import torch
+import pandas as pd
+from datasets import Dataset
+import evaluate
+from sklearn.metrics import confusion_matrix
+from datasets import load_dataset
+import numpy as np
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+checkpoint = torch.load("TwoTask_single_session.pt", map_location=device)
+
+class_weights = checkpoint["class_weights"].to(device)
+
+class two_TaskModel(nn.Module):
+    #Let's build our constructor
+    #let's put a place holder for the model_name
+    def __init__(self,model_name):
+        super(two_TaskModel,self).__init__()
+        #load the headless Model
+        self.encoder = AutoModel.from_pretrained(model_name)
+        #Load the number of hidden size of distilbert or RoBERTa
+        hidden_size = self.encoder.config.hidden_size
+        #We will create our outputs for the fake/real news, it is similar to the num_label
+        self.real_or_fake= nn.Linear(hidden_size,2)
+        #Same goes for the fever dataset
+        self.evidence_based= nn.Linear(hidden_size,3)
+        #self.current_task=None
+        #To prevent overfitting we will drop some neurons during training.
+        self.dropout= nn.Dropout(0.3)
+    
+    def forward(self,input_ids,attention_mask,labels=None,task=None):
+        outputs=self.encoder(
+            input_ids=input_ids,
+            attention_mask=attention_mask
+        )
+        
+        cls_outputs= outputs.last_hidden_state[:,0,:]
+        cls_output= self.dropout(cls_outputs)
+        
+        #The following lines of code will decide which head to use
+        if task==0:
+            logits= self.real_or_fake(cls_output)
+        elif task == 1:
+            logits = self.evidence_based(cls_output)
+        else:
+            raise ValueError("Please select the right task")
+        
+        return {"logits": logits}
+    
+model = two_TaskModel("roberta-base")
+model.load_state_dict(checkpoint["Two_task_single_session"])
+
+model.to(device)
+model.eval()
+
+news_tokenizer = AutoTokenizer.from_pretrained("news_tokenizer/")
+evidence_tokenizer= AutoTokenizer.from_pretrained("evidence/")
+def news_function(examples):
+    return news_tokenizer(examples["title"], examples["text"], truncation=True, max_length=512)
+
+def evidence_tokenization(dataset):
+    evidences=[]
+    for e in dataset["evidence"]:
+        if len(e)>0:
+            text=" ".join([ev[2] for ev in e])
+        else:
+            text=""
+        evidences.append(text)
+
+    return evidence_tokenizer(
+        dataset["claim"],
+        evidences,
+        truncation=True,
+        padding="max_length",
+        max_length=512
+    )
+
+label_map={
+    "SUPPORTS": 0,
+    "REFUTES": 1,
+    "NOT ENOUGH INFO": 2
+}
+def map_labels(labels):
+    return {"label": [label_map[m] for m in labels["label"]]}
+#loading the test dataset for the news head
+test_data=pd.read_csv("test.csv")
+test_data=Dataset.from_pandas(test_data)
+
+test_token= test_data.map(news_function, batched=True)
+test_token = test_token.remove_columns(["title","text"])
+test_token.set_format("torch")
+
+#loading the test dataset for the evidence head 
+feverDataset=load_dataset("copenlu/fever_gold_evidence")
+feverDataset=feverDataset.map(evidence_tokenization, batched=True)
+feverDataset=feverDataset.map(map_labels, batched=True)
+def add_task_evidence(data_set):
+    data_set["task"]=1#evidence will be 1
+    return data_set
+
+fever_test_dataset=feverDataset["test"]#will use to test the model later
+fever_test_dataset=fever_test_dataset.rename_column("label","labels")
+fever_test_dataset=fever_test_dataset.map(add_task_evidence)
+fever_test_dataset = fever_test_dataset.select_columns(
+    ["input_ids", "attention_mask", "labels", "task"]
+)
+#now for metrics
+accuracy_metric= evaluate.load("accuracy")
+precision_metrics= evaluate.load("precision")
+recall_metrics= evaluate.load("recall")
+f1_metric= evaluate.load("f1")
+def news_compute_metrics(eval_pred):
+    logits,labels=eval_pred
+    preds= np.argmax(logits,axis=1)
+    
+    accuracy= accuracy_metric.compute(predictions=preds, references=labels)["accuracy"]
+    precision= precision_metrics.compute(predictions=preds, references=labels, average="binary")["precision"]
+    recall= recall_metrics.compute(predictions=preds, references=labels, average="binary")["recall"]
+    f1= f1_metric.compute(predictions=preds,references=labels, average="binary")["f1"]
+    
+    return {
+        "accuracy":accuracy,
+        "precision":precision,
+        "recall":recall,
+        "f1":f1
+    }
+#These can be used individually for each task
+def evidence_compute_metrics(eval_preds):
+    logits, labels=eval_preds
+    predicts=np.argmax(logits, axis=-1)
+    acc=accuracy_metric.compute(predictions=predicts, references=labels)["accuracy"]
+    macro_f1=f1_metric.compute(predictions=predicts, references=labels, average="macro")["f1"]    #macro since there are way more "SUPPORTS" then the other 2 labels
+    weighted_f1=f1_metric.compute(predictions=predicts, references=labels, average="weighted")["f1"]
+    per_class=f1_metric.compute(predictions=predicts, references=labels, average=None )["f1"]
+    return {
+            "accuracy": acc,
+            "macro_f1": macro_f1,
+            "weighted_f1": weighted_f1,
+            "f1_supports": per_class[0],
+            "f1_refutes": per_class[1],
+            "f1_nei": per_class[2],
+            }
+    
+training_args= TrainingArguments(
+    output_dir="./Single_session_results_test", #Changed because it doesn't require a large number for a small portion
+    per_device_eval_batch_size=16,
+
+)
+trainer=Trainer(
+    model=model,
+    args=training_args,
+    processing_class=news_tokenizer,
+    compute_metrics=news_compute_metrics,
+)
+print("Evaluation on the first WEL data")
+results1= trainer.evaluate(test_token)
+print(results1)
+print("The Matrix")
+predictions= trainer.predict(test_token)
+pred= np.argmax(predictions.predictions, axis=1)
+labels= predictions.label_ids
+final_matrix= confusion_matrix(labels,pred)
+print(final_matrix)
