@@ -203,3 +203,12 @@ pred= np.argmax(predictions.predictions, axis=1)
 labels= predictions.label_ids
 final_matrix= confusion_matrix(labels,pred)
 print(final_matrix)
+
+testPredictions=trainer.predict(fever_test_dataset)
+print("\nFrom this point, it is the metrics on testing on the fever dataset\n")
+print(dir(testPredictions))
+print(testPredictions.label_ids)
+print("---------------------")
+print(testPredictions.predictions)
+print("---------------------")
+print(testPredictions.metrics)
