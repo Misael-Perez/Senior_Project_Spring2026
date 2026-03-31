@@ -204,7 +204,13 @@ labels= predictions.label_ids
 final_matrix= confusion_matrix(labels,pred)
 print(final_matrix)
 
-testPredictions=trainer.predict(fever_test_dataset)
+evidence_trainer = Trainer(
+    model=model,
+    args=training_args,
+    processing_class=evidence_tokenizer,
+    compute_metrics=evidence_compute_metrics,
+)
+testPredictions=evidence_trainer.predict(fever_test_dataset)
 print("\nFrom this point, it is the metrics on testing on the fever dataset\n")
 print(dir(testPredictions))
 print(testPredictions.label_ids)
