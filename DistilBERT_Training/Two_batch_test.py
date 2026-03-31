@@ -40,9 +40,11 @@ class two_TaskModel(nn.Module):
         cls_output= self.dropout(cls_outputs)
         
         #The following lines of code will decide which head to use
-        if task==0:
+        mask_news=(task==0)
+        mask_evidence=(task==1)
+        if mask_news.any():
             logits= self.real_or_fake(cls_output)
-        elif task == 1:
+        elif mask_evidence.any():
             logits = self.evidence_based(cls_output)
         else:
             raise ValueError("Please select the right task")
@@ -151,46 +153,13 @@ training_args= TrainingArguments(
     per_device_eval_batch_size=16,
 
 )
-class Two_Task_Trainer(Trainer):
-    def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
-        task=inputs.pop("task")
-        print(task)
-        labels=inputs.pop("labels")
-        input_ids=inputs["input_ids"]
-        attention_mask=inputs["attention_mask"]
-        loss=0
-        total_samples=0
-        outputs_all={}
-        
-        mask_news=(task==0)
-        mask_evidence=(task==1)
-        if mask_news.any():
-            outputs_news=model(input_ids=input_ids[mask_news],attention_mask=attention_mask[mask_news],task=0)
-            logits_news=outputs_news["logits"]
-            label_news=labels[mask_news]
-            
-            loss_news=nn.CrossEntropyLoss()(logits_news,label_news)
-            loss+=loss_news*label_news.size(0)
-            total_samples+=label_news.size(0)
-            outputs_all["news_logits"]= logits_news
-        if mask_evidence.any():
-            outputs_evidence=model(input_ids=input_ids[mask_evidence],attention_mask=attention_mask[mask_evidence],task=1)
-            logits_evidence= outputs_evidence["logits"]
-            label_evidence=labels[mask_evidence]
-            loss_evidence=nn.CrossEntropyLoss(weight=class_weights)(logits_evidence,label_evidence)
-            loss+= loss_evidence*label_evidence.size(0)
-            total_samples+=label_evidence.size(0)
-            outputs_all["evidence_logits"]=logits_evidence
-        loss=loss/total_samples
-        
-        return (loss,outputs_all) if return_outputs else loss
 trainer=Trainer(
     model=model,
     args=training_args,
     processing_class=news_tokenizer,
     compute_metrics=news_compute_metrics,
 )
-print("Evaluation on the first WEL data")
+print("Evaluation on the test_token data")
 results1= trainer.evaluate(test_token)
 print(results1)
 print("The Matrix")
