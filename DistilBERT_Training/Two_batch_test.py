@@ -188,6 +188,7 @@ class Two_Task_Trainer(Trainer):
         loss=loss/total_samples
         
         return (loss,outputs_all) if return_outputs else loss
+"""
 trainer=Trainer(
     model=model,
     args=training_args,
@@ -203,7 +204,7 @@ pred= np.argmax(predictions.predictions, axis=1)
 labels= predictions.label_ids
 final_matrix= confusion_matrix(labels,pred)
 print(final_matrix)
-
+"""
 evidence_trainer = Trainer(
     model=model,
     args=training_args,
