@@ -123,6 +123,21 @@ WEL_3_data = WEL_3_data.remove_columns(["title","text"])
 Large_Data.set_format("torch")
 WEL_3_data.set_format("torch")
 
+#loading the test dataset for the evidence head 
+feverDataset=load_dataset("copenlu/fever_gold_evidence")
+feverDataset=feverDataset.map(evidence_tokenization, batched=True)
+feverDataset=feverDataset.map(map_labels, batched=True)
+def add_task_evidence(data_set):
+    data_set["task"]=1#evidence will be 1
+    return data_set
+
+fever_test_dataset=feverDataset["test"]#will use to test the model later
+fever_test_dataset=fever_test_dataset.rename_column("label","labels")
+fever_test_dataset=fever_test_dataset.map(add_task_evidence)
+fever_test_dataset = fever_test_dataset.select_columns(
+    ["input_ids", "attention_mask", "labels", "task"]
+)
+
 main_args= TrainingArguments(
     "Single_trained_multiModel",
     learning_rate=2e-5,
@@ -194,6 +209,16 @@ print("\nThe Matrix below is the confusion matrix on the Test data")
 print(final_matrix)
 test_metrics= Trainer.evaluate(WEL_3_data)
 print("\nThe Test metrics\n", test_metrics)
+
+testPredictions=Trainer.predict(fever_test_dataset)
+print(dir(testPredictions))
+print(testPredictions.label_ids)
+print("---------------------")
+print(testPredictions.predictions)
+print("---------------------")
+print(testPredictions.metrics)
+
+print("METRICS: ", testPredictions.metrics)
 
 torch.save({
     "Two_task_single_session": model.state_dict(),
