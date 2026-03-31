@@ -211,6 +211,9 @@ evidence_trainer = Trainer(
     processing_class=evidence_tokenizer,
     compute_metrics=evidence_compute_metrics,
 )
+supports_count=fever_test_dataset["labels"].count(0)
+refutes_count=fever_test_dataset["labels"].count(1)
+nei_count=fever_test_dataset["labels"].count(2)
 testPredictions=evidence_trainer.predict(fever_test_dataset)
 print("\nFrom this point, it is the metrics on testing on the fever dataset\n")
 print(dir(testPredictions))
