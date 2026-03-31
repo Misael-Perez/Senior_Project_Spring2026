@@ -188,13 +188,14 @@ class Two_Task_Trainer(Trainer):
         loss=loss/total_samples
         
         return (loss,outputs_all) if return_outputs else loss
-"""
+
 trainer=Trainer(
     model=model,
     args=training_args,
     processing_class=news_tokenizer,
     compute_metrics=news_compute_metrics,
 )
+"""
 print("Evaluation on the test_token data")
 results1= trainer.evaluate(test_token)
 print(results1)
@@ -226,3 +227,64 @@ print("---------------------")
 print(testPredictions.predictions)
 print("---------------------")
 print(testPredictions.metrics)
+
+#from this point, we are going to test on a different dataset
+#Let's load our data
+WEL_1_data= pd.read_csv("WEL1/Wel_PT1.csv")
+WEL_2_data=pd.read_csv("WEL2/Wel_PT2.csv")
+WEL_3_data=pd.read_csv("WEL3/Wel_PT3.csv")
+#Invert the labels
+WEL_1_data["labels"] = 1 - WEL_1_data["labels"]
+WEL_2_data["labels"] = 1 - WEL_2_data["labels"]
+WEL_3_data["labels"] = 1 - WEL_3_data["labels"]
+
+WEL_1_data= Dataset.from_pandas(WEL_1_data)
+WEL_2_data= Dataset.from_pandas(WEL_2_data)
+WEL_3_data=Dataset.from_pandas(WEL_3_data)
+
+#tokenize every text for both datasets
+WEL_1_data=WEL_1_data.map(news_function, batched=True)
+WEL_2_data= WEL_2_data.map(news_function, batched=True)
+WEL_3_data= WEL_3_data.map(news_function, batched=True)
+#we are going to add a task column for the dataset
+WEL_1_data=WEL_1_data.map(add_task_news)
+WEL_2_data=WEL_2_data.map(add_task_news)
+WEL_3_data=WEL_3_data.map(add_task_news)
+#Remove all colmuns that will not be used
+WEL_1_data = WEL_1_data.remove_columns(["title","text"])
+WEL_2_data = WEL_2_data.remove_columns(["title","text"])
+WEL_3_data = WEL_3_data.remove_columns(["title","text"])
+#set to torch
+WEL_1_data.set_format("torch")
+WEL_2_data.set_format("torch")
+WEL_3_data.set_format("torch")
+
+print("Evaluation on the first WEL data")
+results1= trainer.evaluate(WEL_1_data)
+print(results1)
+print("The Matrix")
+predictions= trainer.predict(WEL_1_data)
+pred= np.argmax(predictions.predictions, axis=1)
+labels= predictions.label_ids
+final_matrix= confusion_matrix(labels,pred)
+print(final_matrix)
+
+print("Evaluation on the second WEL data")
+results2= trainer.evaluate(WEL_2_data)
+print(results2)
+print("The Matrix")
+predictions= trainer.predict(WEL_2_data)
+pred= np.argmax(predictions.predictions, axis=1)
+labels= predictions.label_ids
+final_matrix= confusion_matrix(labels,pred)
+print(final_matrix)
+
+print("Evaluation on the third WEL data")
+results3= trainer.evaluate(WEL_3_data)
+print(results3)
+print("The Matrix")
+predictions= trainer.predict(WEL_3_data)
+pred= np.argmax(predictions.predictions, axis=1)
+labels= predictions.label_ids
+final_matrix= confusion_matrix(labels,pred)
+print(final_matrix)
