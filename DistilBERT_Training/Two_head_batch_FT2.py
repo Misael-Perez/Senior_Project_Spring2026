@@ -159,7 +159,6 @@ main_args= TrainingArguments(
 class Two_Task_Trainer(Trainer):
     def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
         task=inputs.pop("task")
-        print(task)
         labels=inputs.pop("labels")
         input_ids=inputs["input_ids"]
         attention_mask=inputs["attention_mask"]
