@@ -12,8 +12,8 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 checkpoint = torch.load("TwoTask_single_session.pt", map_location=device)
 
 class_weights = checkpoint["class_weights"].to(device)
-checkpoint="roberta-base"
-tokenizer=AutoTokenizer.from_pretrained(checkpoint)
+
+tokenizer=AutoTokenizer.from_pretrained("roberta-base")
 class two_TaskModel(nn.Module):
     #Let's build our constructor
     #let's put a place holder for the model_name
