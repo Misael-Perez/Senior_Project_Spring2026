@@ -114,7 +114,7 @@ def add_task_news(data_set):
     data_set["task"]=0#News will be 0
     return data_set
 #we are going to add a task column for the dataset
-Large_Data-Large_Data.map(add_task_news)
+Large_Data=Large_Data.map(add_task_news)
 WEL_3_data=WEL_3_data.map(add_task_news)
 #Remove all colmuns that will not be used
 Large_Data=Large_Data.remove_columns(["title","text"])
