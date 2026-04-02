@@ -40,6 +40,7 @@ class two_TaskModel(nn.Module):
         cls_output= self.dropout(cls_outputs)
         
         #The following lines of code will decide which head to use
+        #this is different from the actual training architecture
         if (task==0).all():
             logits= self.real_or_fake(cls_output)
             loss_fn= nn.CrossEntropyLoss()

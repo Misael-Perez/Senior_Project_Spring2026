@@ -41,18 +41,15 @@ class two_TaskModel(nn.Module):
         cls_output= self.dropout(cls_outputs)
         
         #The following lines of code will decide which head to use
-        if (task==0).all():
+        #The following lines of code will decide which head to use
+        if task==0:
             logits= self.real_or_fake(cls_output)
-            loss_fn= nn.CrossEntropyLoss()
-        elif (task==1).all():
+        elif task == 1:
             logits = self.evidence_based(cls_output)
-            loss_fn = nn.CrossEntropyLoss(weight=class_weights)
         else:
             raise ValueError("Please select the right task")
-        if labels is not None:
-            loss= loss_fn(logits,labels)
         
-        return {"loss": loss, "logits": logits}
+        return {"logits": logits}
     
 model = two_TaskModel("roberta-base")
 model.load_state_dict(checkpoint["Two_task_single_session"])
