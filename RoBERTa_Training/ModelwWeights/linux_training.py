@@ -122,7 +122,7 @@ trainer = myTrainer(
     training_args,
     train_dataset=fever_train_dataset,
     eval_dataset=fever_validation_dataset,
-    tokenizer=tokenizer,
+    processing_class=tokenizer,
     compute_metrics=compute_metrics,
 )
 
