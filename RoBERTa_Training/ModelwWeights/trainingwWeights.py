@@ -48,7 +48,6 @@ feverDataset=feverDataset.map(tokenization, batched=True)
 feverDataset=feverDataset.map(map_labels, batched=True)
 
 fever_train_dataset=feverDataset["train"]
-fever_train_dataset = fever_train_dataset.rename_column("label", "labels")
 fever_validation_dataset=feverDataset["validation"] # will use to evaluate model
 fever_test_dataset=feverDataset["test"] #will use to test the model later
 
@@ -57,7 +56,7 @@ refutes_count=fever_train_dataset["label"].count(1)
 nei_count=fever_train_dataset["label"].count(2)
 
 
-fever_train_dataset=fever_train_dataset.select_columns(["input_ids", "attention_mask", "labels"])
+fever_train_dataset=fever_train_dataset.select_columns(["input_ids", "attention_mask", "label"])
 
 #Fine-Tuning
 model=AutoModelForSequenceClassification.from_pretrained(
