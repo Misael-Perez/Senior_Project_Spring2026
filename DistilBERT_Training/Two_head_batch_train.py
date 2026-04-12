@@ -2,7 +2,7 @@ from datasets import load_dataset, concatenate_datasets, interleave_datasets
 from transformers import (AutoTokenizer, AutoModel,AutoModelForSequenceClassification,
     Trainer, TrainingArguments)
 import torch
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cpu") #you can change to GPU if you want
 #make sure cpu only
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
@@ -241,7 +241,7 @@ main_args= TrainingArguments(
     metric_for_best_model="eval_loss",
     greater_is_better=False,
     remove_unused_columns=False,
-    use_cpu=True
+    use_cpu=True #to force CPU 
     
 )
 
