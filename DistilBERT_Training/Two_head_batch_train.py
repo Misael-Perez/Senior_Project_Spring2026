@@ -2,7 +2,7 @@ from datasets import load_dataset, concatenate_datasets, interleave_datasets
 from transformers import (AutoTokenizer, AutoModel,AutoModelForSequenceClassification,
     Trainer, TrainingArguments)
 import torch
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cpu")
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
@@ -28,7 +28,7 @@ def map_labels(labels):
     return {"label": [label_map[m] for m in labels["label"]]}
 
 # list your tokenizer here:
-checkpoint="roberta-base"
+checkpoint="distilbert-base-uncased"
 tokenizer=AutoTokenizer.from_pretrained(checkpoint)
 
 def news_tokenizer(dataset):
@@ -212,7 +212,7 @@ class two_TaskModel(nn.Module):
 #We will now combine the dataset so that it would only be one single training session.
 training_data=interleave_datasets([train_token,fever_train_dataset],probabilities=[0.5,0.5],seed=42)
 #We will now load our verison of the model
-model= two_TaskModel("roberta-base")
+model= two_TaskModel("distilbert-base-uncased")
 model.to(device)
 
 """The following section would be about the training arguments and their trainer.
