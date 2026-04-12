@@ -3,6 +3,9 @@ from transformers import (AutoTokenizer, AutoModel,AutoModelForSequenceClassific
     Trainer, TrainingArguments)
 import torch
 device = torch.device("cpu")
+#make sure cpu only
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = ""
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
@@ -329,7 +332,7 @@ torch.save({
     "class_weights": class_weights,
     "label_map":label_map,
     "id2label":id2label
-}, "TwoTask_single_session.pt")
+}, "TwoTask_single_session_CPU.pt")
 
 
 
