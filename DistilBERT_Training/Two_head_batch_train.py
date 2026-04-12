@@ -2,7 +2,7 @@ from datasets import load_dataset, concatenate_datasets, interleave_datasets
 from transformers import (AutoTokenizer, AutoModel,AutoModelForSequenceClassification,
     Trainer, TrainingArguments)
 import torch
-device = torch.device("cpu")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 #make sure cpu only
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
@@ -175,7 +175,7 @@ nei_count=fever_train_dataset["labels"].count(2)
 
 
 class_weights=torch.tensor([1.0/supports_count, 1.0/refutes_count, 1.0/nei_count])  
-class_weights=class_weights.to(device)
+#class_weights=class_weights.to(device)
 
 #combine the datasets
 
@@ -221,6 +221,7 @@ training_data=interleave_datasets([train_token,fever_train_dataset],probabilitie
 #We will now load our verison of the model
 model= two_TaskModel("distilbert-base-uncased")
 model.to(device)
+class_weights=class_weights.to(device)
 
 """The following section would be about the training arguments and their trainer.
 We would be training the model sequentially. So, first train on task 1 and then on task 2."""
