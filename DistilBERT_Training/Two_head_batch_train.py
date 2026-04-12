@@ -241,7 +241,7 @@ main_args= TrainingArguments(
     metric_for_best_model="eval_loss",
     greater_is_better=False,
     remove_unused_columns=False,
-    no_cuda=True
+    use_cpu=True
     
 )
 
