@@ -33,7 +33,7 @@ tokenizer=AutoTokenizer.from_pretrained(checkpoint)
 
 def news_tokenizer(dataset):
     return tokenizer(
-        dataset["title"], dataset["text"], truncation=True,padding="max_length", max_length=512
+        dataset["title"], dataset["text"], truncation=True,padding="max_length", max_length=512, return_token_type_ids=False
     )
     
 def evidence_tokenization(dataset):
@@ -50,7 +50,8 @@ def evidence_tokenization(dataset):
         evidences,
         truncation=True,
         padding="max_length",
-        max_length=512
+        max_length=512,
+        return_token_type_ids=False
     )
 #The following classes are for the compute metrics
 accuracy_metric= evaluate.load("accuracy")
@@ -119,6 +120,9 @@ eval_token=eval_token.map(add_task_news)
 #remove them
 train_token = train_token.remove_columns(["title","text"])
 eval_token = eval_token.remove_columns(["title","text"])
+#The following code is used to make it work in DistilBERT
+
+
 
 #set them to torch format
 train_token.set_format("torch")
