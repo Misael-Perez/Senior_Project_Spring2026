@@ -1,19 +1,25 @@
 from transformers import (AutoTokenizer, AutoModel,AutoModelForSequenceClassification,
     Trainer, TrainingArguments)
 import torch.nn as nn
+
 import torch
+device = torch.device("cpu") #you can change to GPU if you want
+#make sure cpu only
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = ""
+
 import pandas as pd
 from datasets import Dataset
 import evaluate
 from sklearn.metrics import confusion_matrix
 from datasets import load_dataset
 import numpy as np
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-checkpoint = torch.load("TwoTask_single_session.pt", map_location=device)
+#device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+checkpoint = torch.load("TwoTask_single_session_CPU.pt", map_location=device)
 
 class_weights = checkpoint["class_weights"].to(device)
 
-tokenizer=AutoTokenizer.from_pretrained("roberta-base")
+tokenizer=AutoTokenizer.from_pretrained("distilbert-base-uncased")
 class two_TaskModel(nn.Module):
     #Let's build our constructor
     #let's put a place holder for the model_name
@@ -51,7 +57,7 @@ class two_TaskModel(nn.Module):
         
         return {"logits": logits}
     
-model = two_TaskModel("roberta-base")
+model = two_TaskModel("distilbert-base-uncased")
 model.load_state_dict(checkpoint["Two_task_single_session"])
 
 model.to(device)
@@ -60,7 +66,7 @@ model.eval()
 news_tokenizer = AutoTokenizer.from_pretrained("news_tokenizer/")
 evidence_tokenizer= AutoTokenizer.from_pretrained("evidence/")
 def news_function(examples):
-    return news_tokenizer(examples["title"], examples["text"], truncation=True, max_length=512)
+    return news_tokenizer(examples["title"], examples["text"], truncation=True, max_length=512, return_token_type_ids=False)
 
 def evidence_tokenization(dataset):
     evidences=[]
@@ -76,7 +82,8 @@ def evidence_tokenization(dataset):
         evidences,
         truncation=True,
         padding="max_length",
-        max_length=512
+        max_length=512,
+        return_token_type_ids=False
     )
 
 label_map={
@@ -149,7 +156,8 @@ main_args= TrainingArguments(
     load_best_model_at_end=True,
     metric_for_best_model="eval_loss",
     greater_is_better=False,
-    remove_unused_columns=False
+    remove_unused_columns=False,
+    use_cpu=True #to force CPU
     
 )
 
@@ -221,4 +229,4 @@ torch.save({
     "class_weights": class_weights,
     "label_map":label_map,
     "id2label":id2label
-}, "TwoTask_single_session_FT2.pt")
+}, "TwoTask_single_session_FT2_CPU.pt")
