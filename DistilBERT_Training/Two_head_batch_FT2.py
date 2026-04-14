@@ -17,7 +17,7 @@ import numpy as np
 #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 checkpoint = torch.load("TwoTask_single_session_CPU.pt", map_location=device)
 
-class_weights = checkpoint["class_weights"].to(device)
+class_weights = checkpoint["class_weights"]
 
 tokenizer=AutoTokenizer.from_pretrained("distilbert-base-uncased")
 class two_TaskModel(nn.Module):
@@ -61,7 +61,7 @@ model = two_TaskModel("distilbert-base-uncased")
 model.load_state_dict(checkpoint["Two_task_single_session"])
 
 model.to(device)
-model.eval()
+class_weights=class_weights.to(device)
 
 news_tokenizer = AutoTokenizer.from_pretrained("news_tokenizer/")
 evidence_tokenizer= AutoTokenizer.from_pretrained("evidence/")
