@@ -63,10 +63,10 @@ model.load_state_dict(checkpoint["Two_task_single_session"])
 model.to(device)
 class_weights=class_weights.to(device)
 
-news_tokenizer = AutoTokenizer.from_pretrained("news_tokenizer/")
-evidence_tokenizer= AutoTokenizer.from_pretrained("evidence/")
+#news_tokenizer = AutoTokenizer.from_pretrained("news_tokenizer/")
+#evidence_tokenizer= AutoTokenizer.from_pretrained("evidence/")
 def news_function(examples):
-    return news_tokenizer(examples["title"], examples["text"], truncation=True, max_length=512, return_token_type_ids=False)
+    return tokenizer(examples["title"], examples["text"], truncation=True, max_length=512, return_token_type_ids=False)
 
 def evidence_tokenization(dataset):
     evidences=[]
@@ -77,7 +77,7 @@ def evidence_tokenization(dataset):
             text=""
         evidences.append(text)
 
-    return evidence_tokenizer(
+    return tokenizer(
         dataset["claim"],
         evidences,
         truncation=True,
