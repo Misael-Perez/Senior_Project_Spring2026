@@ -143,7 +143,7 @@ fever_test_dataset = fever_test_dataset.select_columns(
 )
 
 main_args= TrainingArguments(
-    "Single_trained_multiModel",
+    "Single_trained_multiModel_CPU",
     learning_rate=2e-5,
     eval_strategy="steps",
     per_device_train_batch_size=16,
