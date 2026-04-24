@@ -178,3 +178,5 @@ print(precision_fake)
 print(recall_fake)
 print(precision_real)
 print(recall_real)
+
+np.bincount(pred)
