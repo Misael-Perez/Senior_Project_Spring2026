@@ -157,7 +157,7 @@ final_matrix= confusion_matrix(labels,pred)
 print("\nThe Matrix below is the confusion matrix on the Test data")
 print(final_matrix)
 correct_id= np.where(pred==labels)[0]
-wrong_answer=np.where(pred==labels)[0]
+wrong_answer=np.where(pred!=labels)[0]
 
 for i in wrong_answer[:10]:
     print("Prediction:", pred[i], "Label:", labels[i])
