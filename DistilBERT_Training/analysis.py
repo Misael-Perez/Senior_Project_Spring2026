@@ -161,5 +161,6 @@ wrong_answer=np.where(pred==labels)[0]
 
 for i in wrong_answer[:10]:
     print("Prediction:", pred[i], "Label:", labels[i])
-    print(WEL_3_data[i])
+    decoded_text = tokenizer.decode(WEL_3_data[i]["input_ids"], skip_special_tokens=True)
+    print(decoded_text)
     print("------")
