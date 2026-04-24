@@ -180,4 +180,4 @@ print(recall_fake)
 print(precision_real)
 print(recall_real)
 
-np.bincount(pred)
+print(np.bincount(pred))
