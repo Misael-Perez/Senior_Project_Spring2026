@@ -149,7 +149,7 @@ WEL_3_data.set_format("torch")
 
 
 #now to analyze the data.
-predictions= Trainer.predict(test_dataset=WEL_3_data)
+predictions= trainer.predict(WEL_3_data)
 pred= np.argmax(predictions.predictions, axis=1)
 labels= predictions.label_ids
 
