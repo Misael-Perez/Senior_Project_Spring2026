@@ -181,3 +181,13 @@ print(precision_real)
 print(recall_real)
 
 print(np.bincount(pred))
+
+TP_fake = np.sum((pred == 0) & (labels == 0))
+FN_fake = np.sum((pred == 1) & (labels == 0))
+
+TP_real = np.sum((pred == 1) & (labels == 1))
+FN_real = np.sum((pred == 0) & (labels == 1))
+print(TP_fake)
+print(FN_fake)
+print(TP_real)
+print(FN_real)
