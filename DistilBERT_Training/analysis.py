@@ -1,7 +1,7 @@
 from transformers import (AutoTokenizer, AutoModel,AutoModelForSequenceClassification,
     Trainer, TrainingArguments)
 import torch.nn as nn
-
+from sklearn.metrics import precision_score, recall_score
 import torch
 device = torch.device("cpu") #you can change to GPU if you want
 #make sure cpu only
@@ -164,3 +164,17 @@ for i in wrong_answer[:10]:
     decoded_text = tokenizer.decode(WEL_3_data[i]["input_ids"], skip_special_tokens=True)
     print(decoded_text)
     print("------")
+
+
+
+# For FAKE class (assuming label 0 = Fake)
+precision_fake = precision_score(labels, pred, pos_label=0)
+recall_fake = recall_score(labels, pred, pos_label=0)
+
+# For REAL class (label 1)
+precision_real = precision_score(labels, pred, pos_label=1)
+recall_real = recall_score(labels, pred, pos_label=1)
+print(precision_fake)
+print(recall_fake)
+print(precision_real)
+print(recall_real)
