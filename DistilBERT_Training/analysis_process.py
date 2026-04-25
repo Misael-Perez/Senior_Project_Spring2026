@@ -117,7 +117,7 @@ print(final_matrix)
 WEL_3_data=pd.read_csv("WEL3/Wel_PT3.csv")
 WEL_3_data["labels"] = 1 - WEL_3_data["labels"]
 WEL_3_data=Dataset.from_pandas(WEL_3_data)
-WEL_3_data= WEL_3_data.map(news_tokenizer, batched=True)
+WEL_3_data= WEL_3_data.map(preprocess_function, batched=True)
 WEL_3_data = WEL_3_data.remove_columns(["title","text"])
 WEL_3_data.set_format("torch")
 
