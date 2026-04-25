@@ -107,8 +107,22 @@ trainer=Trainer(
 )
 
 
-print("The Matrix")
+print("The Matrix test.csv")
 predictions= trainer.predict(test_token)
+pred= np.argmax(predictions.predictions, axis=1)
+labels= predictions.label_ids
+final_matrix= confusion_matrix(labels,pred)
+print(final_matrix)
+
+WEL_3_data=pd.read_csv("WEL3/Wel_PT3.csv")
+WEL_3_data["labels"] = 1 - WEL_3_data["labels"]
+WEL_3_data=Dataset.from_pandas(WEL_3_data)
+WEL_3_data= WEL_3_data.map(news_tokenizer, batched=True)
+WEL_3_data = WEL_3_data.remove_columns(["title","text"])
+WEL_3_data.set_format("torch")
+
+print("The Matrix Wel_PT3.csv")
+predictions= trainer.predict(WEL_3_data)
 pred= np.argmax(predictions.predictions, axis=1)
 labels= predictions.label_ids
 final_matrix= confusion_matrix(labels,pred)
