@@ -9,7 +9,7 @@ from sklearn.metrics import confusion_matrix
 from datasets import load_dataset
 import numpy as np
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-checkpoint = torch.load("TwoTask_Model_1_full_SEQ_1e3.pt", map_location=device)
+checkpoint = torch.load("TwoTask_Model_1_full_SEQ_freeze.pt", map_location=device)
 
 class_weights = checkpoint["class_weights"].to(device)
 class two_TaskModel(nn.Module):
@@ -106,9 +106,7 @@ trainer=Trainer(
     compute_metrics=news_compute_metrics,
 )
 
-print("Evaluation on the first WEL data")
-results1= trainer.evaluate(test_token)
-print(results1)
+
 print("The Matrix")
 predictions= trainer.predict(test_token)
 pred= np.argmax(predictions.predictions, axis=1)
