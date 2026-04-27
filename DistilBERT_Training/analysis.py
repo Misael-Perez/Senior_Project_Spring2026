@@ -15,7 +15,7 @@ from sklearn.metrics import confusion_matrix
 from datasets import load_dataset
 import numpy as np
 #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-checkpoint = torch.load("TwoTask_single_session.pt", map_location=device)
+checkpoint = torch.load("TwoTask_single_session_CPU.pt", map_location=device)
 
 class_weights = checkpoint["class_weights"].to(device)
 class two_TaskModel(nn.Module):
