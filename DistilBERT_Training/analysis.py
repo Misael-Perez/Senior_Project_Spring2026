@@ -66,7 +66,7 @@ class two_TaskModel(nn.Module):
 model = two_TaskModel("distilbert-base-uncased")
 model.load_state_dict(checkpoint["Two_task_single_session"])
 
-model.to(device)
+model.to("cpu")
 model.eval()
 for param in model.parameters():
     param.data = param.data.to(device)
@@ -234,7 +234,7 @@ for i in uncertain_idx:
     text = tokenizer.decode(WEL_3_data[i]["input_ids"], skip_special_tokens=True)
     print(text)
     print("------")
-    
+print("MODEL DEVICE:", next(model.parameters()).device)
 def word_importance(text):
     words = text.split()
 
@@ -246,7 +246,7 @@ def word_importance(text):
     }
 
     task = torch.zeros(base_inputs["input_ids"].size(0), dtype=torch.long).to(device)
-
+    print("INPUT DEVICE:", base_inputs["input_ids"].device)
     with torch.no_grad():
         base_logits = model(input_ids=base_inputs["input_ids"], attention_mask=base_inputs["attention_mask"],task=task)
 
