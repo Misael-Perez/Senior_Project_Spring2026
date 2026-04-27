@@ -3,10 +3,11 @@ from transformers import (AutoTokenizer, AutoModel,AutoModelForSequenceClassific
 import torch.nn as nn
 from sklearn.metrics import precision_score, recall_score
 import torch
-device = torch.device("cpu") #you can change to GPU if you want
+#device = torch.device("cpu") #you can change to GPU if you want
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 #make sure cpu only
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = ""
+#os.environ["CUDA_VISIBLE_DEVICES"] = ""
 from collections import Counter
 
 import pandas as pd
@@ -66,7 +67,7 @@ class two_TaskModel(nn.Module):
 model = two_TaskModel("distilbert-base-uncased")
 model.load_state_dict(checkpoint["Two_task_single_session"])
 
-model.to("cpu")
+model.to(device)
 model.eval()
 for param in model.parameters():
     param.data = param.data.to(device)
