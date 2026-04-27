@@ -234,7 +234,7 @@ for i in uncertain_idx:
 def word_importance(text):
     words = text.split()
 
-    base_inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=512)
+    base_inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=512,return_token_type_ids=False)
     base_inputs = {k: v.to(device) for k, v in base_inputs.items()}
 
     task = torch.zeros(base_inputs["input_ids"].size(0), dtype=torch.long).to(device)
@@ -250,7 +250,7 @@ def word_importance(text):
     for i in range(len(words)):
         new_text = " ".join(words[:i] + words[i+1:])
 
-        inputs = tokenizer(new_text, return_tensors="pt", truncation=True, max_length=512)
+        inputs = tokenizer(new_text, return_tensors="pt", truncation=True, max_length=512,return_token_type_ids=False)
         inputs = {k: v.to(device) for k, v in inputs.items()}
 
         task = torch.zeros(inputs["input_ids"].size(0), dtype=torch.long).to(device)
@@ -264,6 +264,8 @@ def word_importance(text):
         importance.append((words[i], drop.item()))
 
     return sorted(importance, key=lambda x: x[1], reverse=True)
+
+
 print("Analyze words")
 for i in wrong_answer[:5]:
     text = tokenizer.decode(WEL_3_data[i]["input_ids"], skip_special_tokens=True)
