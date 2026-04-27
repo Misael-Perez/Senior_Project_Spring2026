@@ -240,7 +240,7 @@ def word_importance(text):
     task = torch.zeros(base_inputs["input_ids"].size(0), dtype=torch.long).to(device)
 
     with torch.no_grad():
-        base_logits = model(**base_inputs, task=task)
+        base_logits = model(input_ids=inputs["input_ids"], attention_mask=inputs["attention_mask"],task=task)
 
     base_pred = torch.argmax(base_logits["logits"], dim=1)
     base_prob = torch.softmax(base_logits["logits"], dim=1)[0, base_pred]
@@ -256,7 +256,7 @@ def word_importance(text):
         task = torch.zeros(inputs["input_ids"].size(0), dtype=torch.long).to(device)
 
         with torch.no_grad():
-            logits = model(**inputs, task=task)
+            logits = model(input_ids=inputs["input_ids"], attention_mask=inputs["attention_mask"],task=task)
 
         prob = torch.softmax(logits["logits"], dim=1)[0, base_pred]
         drop = base_prob - prob
