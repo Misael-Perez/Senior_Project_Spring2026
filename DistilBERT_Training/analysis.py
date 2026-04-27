@@ -15,7 +15,7 @@ from sklearn.metrics import confusion_matrix
 from datasets import load_dataset
 import numpy as np
 #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-checkpoint = torch.load("TwoTask_single_session_FT2_CPU.pt", map_location=device)
+checkpoint = torch.load("TwoTask_single_session.pt", map_location=device)
 
 class_weights = checkpoint["class_weights"].to(device)
 class two_TaskModel(nn.Module):
@@ -147,14 +147,25 @@ WEL_3_data=WEL_3_data.map(add_task_news)
 WEL_3_data = WEL_3_data.remove_columns(["title","text"])
 WEL_3_data.set_format("torch")
 
+test_data=pd.read_csv("test.csv")
+test_data=Dataset.from_pandas(test_data)
+test_token= test_data.map(news_tokenizer, batched=True)
+test_token = test_token.remove_columns(["title","text"])
+test_token.set_format("torch")
+
+print("The Matrix test.csv")
+predictions= trainer.predict(test_token)
+pred= np.argmax(predictions.predictions, axis=1)
+labels= predictions.label_ids
+final_matrix= confusion_matrix(labels,pred)
+print(final_matrix)
 
 #now to analyze the data.
 predictions= trainer.predict(WEL_3_data)
 pred= np.argmax(predictions.predictions, axis=1)
 labels= predictions.label_ids
-
 final_matrix= confusion_matrix(labels,pred)
-print("\nThe Matrix below is the confusion matrix on the Test data")
+print("\nThe Matrix on the WEL3 data")
 print(final_matrix)
 correct_id= np.where(pred==labels)[0]
 wrong_answer=np.where(pred!=labels)[0]
