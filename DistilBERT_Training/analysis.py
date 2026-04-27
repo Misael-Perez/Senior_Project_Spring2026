@@ -7,6 +7,7 @@ device = torch.device("cpu") #you can change to GPU if you want
 #make sure cpu only
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
+from collections import Counter
 
 import pandas as pd
 from datasets import Dataset
@@ -227,3 +228,56 @@ for i in uncertain_idx:
     text = tokenizer.decode(WEL_3_data[i]["input_ids"], skip_special_tokens=True)
     print(text)
     print("------")
+    
+def word_importance(text):
+    words = text.split()
+    base_inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=512)
+    
+    base_logits = model(**base_inputs, task=torch.tensor([0]))
+    base_pred = torch.argmax(base_logits["logits"], dim=1)
+
+    importance = []
+
+    for i in range(len(words)):
+        new_text = " ".join(words[:i] + words[i+1:])
+        inputs = tokenizer(new_text, return_tensors="pt", truncation=True, max_length=512,return_token_type_ids=False)
+        logits = model(**inputs, task=torch.tensor([0]))
+        pred = torch.argmax(logits["logits"], dim=1)
+
+        if pred != base_pred:
+            importance.append(words[i])
+
+    return importance
+print("Analyze words")
+for i in wrong_answer[:5]:
+    text = tokenizer.decode(WEL_3_data[i]["input_ids"], skip_special_tokens=True)
+    
+    print("Prediction:", pred[i], "Label:", labels[i])
+    
+    important_words = word_importance(text)
+    
+    print("Important words:", important_words[:10])
+    print(text[:500])  # don’t print everything
+    print("------")
+
+lengths = [len(tokenizer.decode(x["input_ids"])) for x in WEL_3_data]
+fake_lengths = [lengths[i] for i in range(len(pred)) if pred[i]==0]
+real_lengths = [lengths[i] for i in range(len(pred)) if pred[i]==1]
+
+print("Avg fake length:", np.mean(fake_lengths))
+print("Avg real length:", np.mean(real_lengths))
+
+
+fake_texts = [tokenizer.decode(WEL_3_data[i]["input_ids"]) for i in range(len(pred)) if pred[i]==0]
+real_texts = [tokenizer.decode(WEL_3_data[i]["input_ids"]) for i in range(len(pred)) if pred[i]==1]
+
+fake_words = Counter(" ".join(fake_texts).split()).most_common(20)
+real_words = Counter(" ".join(real_texts).split()).most_common(20)
+print("Top FAKE words:", fake_words)
+print("Top REAL words:", real_words)
+
+fake_lengths = [lengths[i] for i in range(len(pred)) if pred[i]==0]
+real_lengths = [lengths[i] for i in range(len(pred)) if pred[i]==1]
+
+print("Avg fake length:", np.mean(fake_lengths))
+print("Avg real length:", np.mean(real_lengths))
