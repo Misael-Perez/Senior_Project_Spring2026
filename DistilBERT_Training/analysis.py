@@ -68,6 +68,8 @@ model.load_state_dict(checkpoint["Two_task_single_session"])
 
 model.to(device)
 model.eval()
+for param in model.parameters():
+    param.data = param.data.to(device)
 tokenizer=AutoTokenizer.from_pretrained("distilbert-base-uncased")
 def news_tokenizer(dataset):
     return tokenizer(
@@ -232,42 +234,39 @@ for i in uncertain_idx:
 def word_importance(text):
     words = text.split()
 
-    base_inputs = tokenizer(
-        text,
-        return_tensors="pt",
-        truncation=True,
-        max_length=512,
-        return_token_type_ids=False
-    )
+    base_inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=512)
     base_inputs = {k: v.to(device) for k, v in base_inputs.items()}
 
-    base_logits = model(**base_inputs, task=torch.tensor([0]).to(device))
+    task = torch.zeros(base_inputs["input_ids"].size(0), dtype=torch.long).to(device)
+
+    with torch.no_grad():
+        base_logits = model(**base_inputs, task=task)
+
     base_pred = torch.argmax(base_logits["logits"], dim=1)
+    base_prob = torch.softmax(base_logits["logits"], dim=1)[0, base_pred]
 
     importance = []
 
     for i in range(len(words)):
         new_text = " ".join(words[:i] + words[i+1:])
 
-        inputs = tokenizer(
-            new_text,
-            return_tensors="pt",
-            truncation=True,
-            max_length=512,
-            return_token_type_ids=False
-        )
+        inputs = tokenizer(new_text, return_tensors="pt", truncation=True, max_length=512)
         inputs = {k: v.to(device) for k, v in inputs.items()}
 
-        logits = model(**inputs, task=torch.tensor([0]).to(device))
-        pred = torch.argmax(logits["logits"], dim=1)
+        task = torch.zeros(inputs["input_ids"].size(0), dtype=torch.long).to(device)
 
-        if pred != base_pred:
-            importance.append(words[i])
+        with torch.no_grad():
+            logits = model(**inputs, task=task)
 
-    return importance
+        prob = torch.softmax(logits["logits"], dim=1)[0, base_pred]
+        drop = base_prob - prob
+
+        importance.append((words[i], drop.item()))
+
+    return sorted(importance, key=lambda x: x[1], reverse=True)
 print("Analyze words")
 for i in wrong_answer[:5]:
-    text = tokenizer.decode(WEL_3_data[i]["input_ids"], skip_special_tokens=True,return_token_type_ids=False)
+    text = tokenizer.decode(WEL_3_data[i]["input_ids"], skip_special_tokens=True)
     
     print("Prediction:", pred[i], "Label:", labels[i])
     
