@@ -214,3 +214,16 @@ for i in fake_preds[:10]:
 for i in real_preds[:10]:
     text = tokenizer.decode(WEL_3_data[i]["input_ids"], skip_special_tokens=True)
     print("Predicted REAL:\n", text, "\n---")
+    import torch.nn.functional as F
+
+logits = predictions.predictions
+probs = F.softmax(torch.tensor(logits), dim=1).numpy()
+
+confidence = np.max(probs, axis=1)
+
+uncertain_idx = np.argsort(confidence)[:20]
+for i in uncertain_idx:
+    print("Pred:", pred[i], "Label:", labels[i], "Conf:", confidence[i])
+    text = tokenizer.decode(WEL_3_data[i]["input_ids"], skip_special_tokens=True)
+    print(text)
+    print("------")
