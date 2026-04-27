@@ -153,6 +153,78 @@ trainer=Trainer(
     processing_class=news_tokenizer,
     compute_metrics=news_compute_metrics,
 )
+
+
+
+def get_prediction_indices(pred, labels):
+    correct = np.where(pred == labels)[0]
+    wrong = np.where(pred != labels)[0]
+
+    fake_preds = np.where(pred == 0)[0]
+    real_preds = np.where(pred == 1)[0]
+
+    return correct, wrong, fake_preds, real_preds
+
+def print_articles(dataset, indices, label_name, n=10):
+    print(f"\nSample {label_name} articles:")
+    for i in indices[:n]:
+        text = tokenizer.decode(dataset[i]["input_ids"], skip_special_tokens=True)
+        print(text[:500])
+        print("---")
+        
+def show_uncertain_cases(logits, pred, labels, dataset, n=20):
+    probs = F.softmax(torch.tensor(logits), dim=1).numpy()
+    confidence = np.max(probs, axis=1)
+
+    uncertain_idx = np.argsort(confidence)[:n]
+
+    print("\nMost uncertain predictions:")
+    for i in uncertain_idx:
+        text = tokenizer.decode(dataset[i]["input_ids"], skip_special_tokens=True)
+        print(f"Pred: {pred[i]} Label: {labels[i]} Conf: {confidence[i]:.4f}")
+        print(text[:500])
+        print("------")
+        
+
+def analyze_wrong_predictions(dataset, wrong_idx, pred, labels, model, tokenizer, device, n=5):
+    print("\nWord Importance Analysis:")
+
+    for i in wrong_idx[:n]:
+        text = tokenizer.decode(dataset[i]["input_ids"], skip_special_tokens=True)
+
+        print(f"\nPrediction: {pred[i]} Label: {labels[i]}")
+
+        important_words = word_importance(text, model, tokenizer, device)
+        print("Top important words:", important_words[:10])
+
+        print(text[:500])
+        print("------")
+        
+        
+def global_analysis(dataset, pred):
+    texts = [
+        tokenizer.decode(dataset[i]["input_ids"], skip_special_tokens=True)
+        for i in range(len(pred))
+    ]
+
+    lengths = [len(t) for t in texts]
+
+    fake_lengths = [lengths[i] for i in range(len(pred)) if pred[i] == 0]
+    real_lengths = [lengths[i] for i in range(len(pred)) if pred[i] == 1]
+
+    print("\nAvg fake length:", np.mean(fake_lengths))
+    print("Avg real length:", np.mean(real_lengths))
+
+    fake_texts = [clean_text(texts[i]) for i in range(len(pred)) if pred[i] == 0]
+    real_texts = [clean_text(texts[i]) for i in range(len(pred)) if pred[i] == 1]
+
+    fake_words = Counter(" ".join(fake_texts).split()).most_common(20)
+    real_words = Counter(" ".join(real_texts).split()).most_common(20)
+
+    print("\nTop FAKE words:", fake_words)
+    print("Top REAL words:", real_words)
+
+
 WEL_3_data=pd.read_csv("WEL3/Wel_PT3.csv")
 WEL_3_data["labels"] = 1 - WEL_3_data["labels"]
 WEL_3_data=Dataset.from_pandas(WEL_3_data)
@@ -177,6 +249,7 @@ print(final_matrix)
 """
 #now to analyze the data.
 predictions= trainer.predict(WEL_3_data)
+logits=predictions.predictions
 pred= np.argmax(predictions.predictions, axis=1)
 labels= predictions.label_ids
 final_matrix= confusion_matrix(labels,pred)
@@ -219,8 +292,15 @@ print(TP_real)
 print(FN_real)
 
 #From this point on, article analysis
-fake_preds = np.where(pred == 0)[0]
-real_preds = np.where(pred == 1)[0]
+
+correct, wrong, fake_preds, real_preds = get_prediction_indices(pred, labels)
+print_articles(WEL_3_data,fake_preds,"FAKE")
+print_articles(WEL_3_data,real_preds,"REAL")
+
+show_uncertain_cases(logits, pred, labels, WEL_3_data)
+
+analyze_wrong_predictions(WEL_3_data, wrong, pred, labels, model, tokenizer, device)
+
 for i in fake_preds[:10]:
     text = tokenizer.decode(WEL_3_data[i]["input_ids"], skip_special_tokens=True)
     print("Predicted FAKE:\n", text, "\n---")
@@ -317,3 +397,12 @@ real_lengths = [lengths[i] for i in range(len(pred)) if pred[i]==1]
 
 print("Avg fake length:", np.mean(fake_lengths))
 print("Avg real length:", np.mean(real_lengths))
+
+
+
+
+
+
+
+
+
