@@ -239,7 +239,11 @@ def word_importance(text):
     words = text.split()
 
     base_inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=512,return_token_type_ids=False)
-    base_inputs = {k: v.to(device) for k, v in base_inputs.items()}
+    #base_inputs = {k: v.to(device) for k, v in base_inputs.items()}
+    base_inputs = {
+        "input_ids": base_inputs["input_ids"].to(device),
+        "attention_mask": base_inputs["attention_mask"].to(device)
+    }
 
     task = torch.zeros(base_inputs["input_ids"].size(0), dtype=torch.long).to(device)
 
@@ -255,8 +259,11 @@ def word_importance(text):
         new_text = " ".join(words[:i] + words[i+1:])
 
         inputs = tokenizer(new_text, return_tensors="pt", truncation=True, max_length=512,return_token_type_ids=False)
-        inputs = {k: v.to(device) for k, v in inputs.items()}
-
+        #inputs = {k: v.to(device) for k, v in inputs.items()}
+        inputs = {
+            "input_ids": inputs["input_ids"].to(device),
+            "attention_mask": inputs["attention_mask"].to(device)
+        }
         task = torch.zeros(inputs["input_ids"].size(0), dtype=torch.long).to(device)
 
         with torch.no_grad():
