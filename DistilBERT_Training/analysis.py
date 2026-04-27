@@ -187,6 +187,47 @@ def show_uncertain_cases(logits, pred, labels, dataset, n=20):
         print("------")
         
 
+def word_importance(text):
+    words = text.split()
+
+    base_inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=512,return_token_type_ids=False)
+    #base_inputs = {k: v.to(device) for k, v in base_inputs.items()}
+    base_inputs = {
+        "input_ids": base_inputs["input_ids"].to(device),
+        "attention_mask": base_inputs["attention_mask"].to(device)
+    }
+
+    task = torch.zeros(base_inputs["input_ids"].size(0), dtype=torch.long).to(device)
+    print("INPUT DEVICE:", base_inputs["input_ids"].device)
+    with torch.no_grad():
+        base_logits = model(input_ids=base_inputs["input_ids"], attention_mask=base_inputs["attention_mask"],task=task)
+
+    base_pred = torch.argmax(base_logits["logits"], dim=1)
+    base_prob = torch.softmax(base_logits["logits"], dim=1)[0, base_pred]
+
+    importance = []
+
+    for i in range(len(words)):
+        new_text = " ".join(words[:i] + words[i+1:])
+
+        inputs = tokenizer(new_text, return_tensors="pt", truncation=True, max_length=512,return_token_type_ids=False)
+        #inputs = {k: v.to(device) for k, v in inputs.items()}
+        inputs = {
+            "input_ids": inputs["input_ids"].to(device),
+            "attention_mask": inputs["attention_mask"].to(device)
+        }
+        task = torch.zeros(inputs["input_ids"].size(0), dtype=torch.long).to(device)
+
+        with torch.no_grad():
+            logits = model(input_ids=inputs["input_ids"], attention_mask=inputs["attention_mask"],task=task)
+
+        prob = torch.softmax(logits["logits"], dim=1)[0, base_pred]
+        drop = base_prob - prob
+
+        importance.append((words[i], drop.item()))
+
+    return sorted(importance, key=lambda x: x[1], reverse=True)
+
 def analyze_wrong_predictions(dataset, wrong_idx, pred, labels, model, tokenizer, device, n=5):
     print("\nWord Importance Analysis:")
 
@@ -323,46 +364,7 @@ for i in uncertain_idx:
     print(text)
     print("------")
 print("MODEL DEVICE:", next(model.parameters()).device)
-def word_importance(text):
-    words = text.split()
 
-    base_inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=512,return_token_type_ids=False)
-    #base_inputs = {k: v.to(device) for k, v in base_inputs.items()}
-    base_inputs = {
-        "input_ids": base_inputs["input_ids"].to(device),
-        "attention_mask": base_inputs["attention_mask"].to(device)
-    }
-
-    task = torch.zeros(base_inputs["input_ids"].size(0), dtype=torch.long).to(device)
-    print("INPUT DEVICE:", base_inputs["input_ids"].device)
-    with torch.no_grad():
-        base_logits = model(input_ids=base_inputs["input_ids"], attention_mask=base_inputs["attention_mask"],task=task)
-
-    base_pred = torch.argmax(base_logits["logits"], dim=1)
-    base_prob = torch.softmax(base_logits["logits"], dim=1)[0, base_pred]
-
-    importance = []
-
-    for i in range(len(words)):
-        new_text = " ".join(words[:i] + words[i+1:])
-
-        inputs = tokenizer(new_text, return_tensors="pt", truncation=True, max_length=512,return_token_type_ids=False)
-        #inputs = {k: v.to(device) for k, v in inputs.items()}
-        inputs = {
-            "input_ids": inputs["input_ids"].to(device),
-            "attention_mask": inputs["attention_mask"].to(device)
-        }
-        task = torch.zeros(inputs["input_ids"].size(0), dtype=torch.long).to(device)
-
-        with torch.no_grad():
-            logits = model(input_ids=inputs["input_ids"], attention_mask=inputs["attention_mask"],task=task)
-
-        prob = torch.softmax(logits["logits"], dim=1)[0, base_pred]
-        drop = base_prob - prob
-
-        importance.append((words[i], drop.item()))
-
-    return sorted(importance, key=lambda x: x[1], reverse=True)
 
 
 print("Analyze words")
