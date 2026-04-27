@@ -70,6 +70,10 @@ model.to(device)
 model.eval()
 for param in model.parameters():
     param.data = param.data.to(device)
+    model.encoder = model.encoder.to(device)
+model.real_or_fake = model.real_or_fake.to(device)
+model.evidence_based = model.evidence_based.to(device)
+model.dropout = model.dropout.to(device)
 tokenizer=AutoTokenizer.from_pretrained("distilbert-base-uncased")
 def news_tokenizer(dataset):
     return tokenizer(
