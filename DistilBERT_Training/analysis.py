@@ -250,7 +250,7 @@ def word_importance(text):
     return importance
 print("Analyze words")
 for i in wrong_answer[:5]:
-    text = tokenizer.decode(WEL_3_data[i]["input_ids"], skip_special_tokens=True)
+    text = tokenizer.decode(WEL_3_data[i]["input_ids"], skip_special_tokens=True,return_token_type_ids=False)
     
     print("Prediction:", pred[i], "Label:", labels[i])
     
