@@ -231,7 +231,7 @@ for i in uncertain_idx:
     
 def word_importance(text):
     words = text.split()
-    base_inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=512)
+    base_inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=512,return_token_type_ids=False)
     
     base_logits = model(**base_inputs, task=torch.tensor([0]))
     base_pred = torch.argmax(base_logits["logits"], dim=1)
