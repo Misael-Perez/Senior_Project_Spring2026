@@ -17,6 +17,7 @@ from sklearn.metrics import confusion_matrix
 from datasets import load_dataset
 import numpy as np
 import re
+import torch.nn.functional as F
 
 def clean_text(text):
     text = text.lower()
@@ -308,7 +309,7 @@ for i in fake_preds[:10]:
 for i in real_preds[:10]:
     text = tokenizer.decode(WEL_3_data[i]["input_ids"], skip_special_tokens=True)
     print("Predicted REAL:\n", text, "\n---")
-    import torch.nn.functional as F
+    
 
 logits = predictions.predictions
 probs = F.softmax(torch.tensor(logits), dim=1).numpy()
