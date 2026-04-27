@@ -187,20 +187,26 @@ def show_uncertain_cases(logits, pred, labels, dataset, n=20):
         print("------")
         
 
-def word_importance(text):
+def word_importance(text, model, tokenizer, device):
     words = text.split()
 
-    base_inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=512,return_token_type_ids=False)
-    #base_inputs = {k: v.to(device) for k, v in base_inputs.items()}
+    base_inputs = tokenizer(
+        text,
+        return_tensors="pt",
+        truncation=True,
+        max_length=512,
+        return_token_type_ids=False
+    )
+
     base_inputs = {
         "input_ids": base_inputs["input_ids"].to(device),
         "attention_mask": base_inputs["attention_mask"].to(device)
     }
 
     task = torch.zeros(base_inputs["input_ids"].size(0), dtype=torch.long).to(device)
-    print("INPUT DEVICE:", base_inputs["input_ids"].device)
+
     with torch.no_grad():
-        base_logits = model(input_ids=base_inputs["input_ids"], attention_mask=base_inputs["attention_mask"],task=task)
+        base_logits = model(**base_inputs, task=task)
 
     base_pred = torch.argmax(base_logits["logits"], dim=1)
     base_prob = torch.softmax(base_logits["logits"], dim=1)[0, base_pred]
@@ -210,16 +216,23 @@ def word_importance(text):
     for i in range(len(words)):
         new_text = " ".join(words[:i] + words[i+1:])
 
-        inputs = tokenizer(new_text, return_tensors="pt", truncation=True, max_length=512,return_token_type_ids=False)
-        #inputs = {k: v.to(device) for k, v in inputs.items()}
+        inputs = tokenizer(
+            new_text,
+            return_tensors="pt",
+            truncation=True,
+            max_length=512,
+            return_token_type_ids=False
+        )
+
         inputs = {
             "input_ids": inputs["input_ids"].to(device),
             "attention_mask": inputs["attention_mask"].to(device)
         }
+
         task = torch.zeros(inputs["input_ids"].size(0), dtype=torch.long).to(device)
 
         with torch.no_grad():
-            logits = model(input_ids=inputs["input_ids"], attention_mask=inputs["attention_mask"],task=task)
+            logits = model(**inputs, task=task)
 
         prob = torch.softmax(logits["logits"], dim=1)[0, base_pred]
         drop = base_prob - prob
@@ -343,13 +356,7 @@ show_uncertain_cases(logits, pred, labels, WEL_3_data)
 
 analyze_wrong_predictions(WEL_3_data, wrong, pred, labels, model, tokenizer, device)
 
-for i in fake_preds[:10]:
-    text = tokenizer.decode(WEL_3_data[i]["input_ids"], skip_special_tokens=True)
-    print("Predicted FAKE:\n", text, "\n---")
-
-for i in real_preds[:10]:
-    text = tokenizer.decode(WEL_3_data[i]["input_ids"], skip_special_tokens=True)
-    print("Predicted REAL:\n", text, "\n---")
+global_analysis(WEL_3_data,pred)
     
 
 logits = predictions.predictions
@@ -363,43 +370,11 @@ for i in uncertain_idx:
     text = tokenizer.decode(WEL_3_data[i]["input_ids"], skip_special_tokens=True)
     print(text)
     print("------")
-print("MODEL DEVICE:", next(model.parameters()).device)
 
 
 
-print("Analyze words")
-for i in wrong_answer[:5]:
-    text = tokenizer.decode(WEL_3_data[i]["input_ids"], skip_special_tokens=True)
-    
-    print("Prediction:", pred[i], "Label:", labels[i])
-    
-    important_words = word_importance(text)
-    
-    print("Important words:", important_words[:10])
-    print(text[:500])  # don’t print everything
-    print("------")
-
-lengths = [len(tokenizer.decode(x["input_ids"])) for x in WEL_3_data]
-fake_lengths = [lengths[i] for i in range(len(pred)) if pred[i]==0]
-real_lengths = [lengths[i] for i in range(len(pred)) if pred[i]==1]
-
-print("Avg fake length:", np.mean(fake_lengths))
-print("Avg real length:", np.mean(real_lengths))
 
 
-fake_texts = [clean_text(tokenizer.decode(WEL_3_data[i]["input_ids"], skip_special_tokens=True)) for i in range(len(pred)) if pred[i]==0]
-real_texts = [clean_text(tokenizer.decode(WEL_3_data[i]["input_ids"], skip_special_tokens=True)) for i in range(len(pred)) if pred[i]==1]
-
-fake_words = Counter(" ".join(fake_texts).split()).most_common(20)
-real_words = Counter(" ".join(real_texts).split()).most_common(20)
-print("Top FAKE words:", fake_words)
-print("Top REAL words:", real_words)
-
-fake_lengths = [lengths[i] for i in range(len(pred)) if pred[i]==0]
-real_lengths = [lengths[i] for i in range(len(pred)) if pred[i]==1]
-
-print("Avg fake length:", np.mean(fake_lengths))
-print("Avg real length:", np.mean(real_lengths))
 
 
 
