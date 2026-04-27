@@ -16,6 +16,12 @@ import evaluate
 from sklearn.metrics import confusion_matrix
 from datasets import load_dataset
 import numpy as np
+import re
+
+def clean_text(text):
+    text = text.lower()
+    text = re.sub(r"[^a-z\s]", "", text)  # remove punctuation
+    return text
 #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 checkpoint = torch.load("TwoTask_single_session_FT2_CPU.pt", map_location=device)
 
@@ -298,8 +304,8 @@ print("Avg fake length:", np.mean(fake_lengths))
 print("Avg real length:", np.mean(real_lengths))
 
 
-fake_texts = [tokenizer.decode(WEL_3_data[i]["input_ids"]) for i in range(len(pred)) if pred[i]==0]
-real_texts = [tokenizer.decode(WEL_3_data[i]["input_ids"]) for i in range(len(pred)) if pred[i]==1]
+fake_texts = [clean_text(tokenizer.decode(WEL_3_data[i]["input_ids"], skip_special_tokens=True)) for i in range(len(pred)) if pred[i]==0]
+real_texts = [clean_text(tokenizer.decode(WEL_3_data[i]["input_ids"], skip_special_tokens=True)) for i in range(len(pred)) if pred[i]==1]
 
 fake_words = Counter(" ".join(fake_texts).split()).most_common(20)
 real_words = Counter(" ".join(real_texts).split()).most_common(20)
