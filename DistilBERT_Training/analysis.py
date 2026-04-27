@@ -15,7 +15,7 @@ from sklearn.metrics import confusion_matrix
 from datasets import load_dataset
 import numpy as np
 #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-checkpoint = torch.load("TwoTask_single_session_CPU.pt", map_location=device)
+checkpoint = torch.load("TwoTask_single_session_FT2_CPU.pt", map_location=device)
 
 class_weights = checkpoint["class_weights"].to(device)
 class two_TaskModel(nn.Module):
@@ -146,7 +146,7 @@ WEL_3_data= WEL_3_data.map(news_tokenizer, batched=True)
 WEL_3_data=WEL_3_data.map(add_task_news)
 WEL_3_data = WEL_3_data.remove_columns(["title","text"])
 WEL_3_data.set_format("torch")
-
+"""
 test_data=pd.read_csv("test.csv")
 test_data=Dataset.from_pandas(test_data)
 test_token= test_data.map(news_tokenizer, batched=True)
@@ -160,7 +160,7 @@ pred= np.argmax(predictions.predictions, axis=1)
 labels= predictions.label_ids
 final_matrix= confusion_matrix(labels,pred)
 print(final_matrix)
-
+"""
 #now to analyze the data.
 predictions= trainer.predict(WEL_3_data)
 pred= np.argmax(predictions.predictions, axis=1)
@@ -203,3 +203,14 @@ print(TP_fake)
 print(FN_fake)
 print(TP_real)
 print(FN_real)
+
+#From this point on, article analysis
+fake_preds = np.where(pred == 0)[0]
+real_preds = np.where(pred == 1)[0]
+for i in fake_preds[:10]:
+    text = tokenizer.decode(WEL_3_data[i]["input_ids"], skip_special_tokens=True)
+    print("Predicted FAKE:\n", text, "\n---")
+
+for i in real_preds[:10]:
+    text = tokenizer.decode(WEL_3_data[i]["input_ids"], skip_special_tokens=True)
+    print("Predicted REAL:\n", text, "\n---")
