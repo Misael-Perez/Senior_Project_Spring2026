@@ -236,7 +236,8 @@ def word_importance(text):
         text,
         return_tensors="pt",
         truncation=True,
-        max_length=512
+        max_length=512,
+        return_token_type_ids=False
     )
     base_inputs = {k: v.to(device) for k, v in base_inputs.items()}
 
@@ -252,7 +253,8 @@ def word_importance(text):
             new_text,
             return_tensors="pt",
             truncation=True,
-            max_length=512
+            max_length=512,
+            return_token_type_ids=False
         )
         inputs = {k: v.to(device) for k, v in inputs.items()}
 
