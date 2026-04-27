@@ -155,7 +155,19 @@ trainer=Trainer(
     compute_metrics=news_compute_metrics,
 )
 
+def get_matrix(trainer, dataset):
+    predictions = trainer.predict(dataset)
 
+    logits = predictions.predictions
+    pred = np.argmax(logits, axis=1)
+    labels = predictions.label_ids
+
+    matrix = confusion_matrix(labels, pred)
+
+    print("\nConfusion Matrix:")
+    print(matrix)
+
+    return logits, pred, labels
 
 def get_prediction_indices(pred, labels):
     correct = np.where(pred == labels)[0]
@@ -303,48 +315,8 @@ final_matrix= confusion_matrix(labels,pred)
 print(final_matrix)
 """
 #now to analyze the data.
-predictions= trainer.predict(WEL_3_data)
-logits=predictions.predictions
-pred= np.argmax(predictions.predictions, axis=1)
-labels= predictions.label_ids
-final_matrix= confusion_matrix(labels,pred)
-print("\nThe Matrix on the WEL3 data")
-print(final_matrix)
-correct_id= np.where(pred==labels)[0]
-wrong_answer=np.where(pred!=labels)[0]
-"""
-for i in wrong_answer[:10]:
-    print("Prediction:", pred[i], "Label:", labels[i])
-    decoded_text = tokenizer.decode(WEL_3_data[i]["input_ids"], skip_special_tokens=True)
-    print(decoded_text)
-    print("------")
-"""
 
-
-
-# For FAKE class (assuming label 0 = Fake)
-precision_fake = precision_score(labels, pred, pos_label=0)
-recall_fake = recall_score(labels, pred, pos_label=0)
-
-# For REAL class (label 1)
-precision_real = precision_score(labels, pred, pos_label=1)
-recall_real = recall_score(labels, pred, pos_label=1)
-print(precision_fake)
-print(recall_fake)
-print(precision_real)
-print(recall_real)
-
-print(np.bincount(pred))
-
-TP_fake = np.sum((pred == 0) & (labels == 0))
-FN_fake = np.sum((pred == 1) & (labels == 0))
-
-TP_real = np.sum((pred == 1) & (labels == 1))
-FN_real = np.sum((pred == 0) & (labels == 1))
-print(TP_fake)
-print(FN_fake)
-print(TP_real)
-print(FN_real)
+logits, pred, labels=get_matrix(trainer,WEL_3_data)
 
 #From this point on, article analysis
 
@@ -359,17 +331,7 @@ analyze_wrong_predictions(WEL_3_data, wrong, pred, labels, model, tokenizer, dev
 global_analysis(WEL_3_data,pred)
     
 
-logits = predictions.predictions
-probs = F.softmax(torch.tensor(logits), dim=1).numpy()
 
-confidence = np.max(probs, axis=1)
-
-uncertain_idx = np.argsort(confidence)[:20]
-for i in uncertain_idx:
-    print("Pred:", pred[i], "Label:", labels[i], "Conf:", confidence[i])
-    text = tokenizer.decode(WEL_3_data[i]["input_ids"], skip_special_tokens=True)
-    print(text)
-    print("------")
 
 
 
