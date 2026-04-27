@@ -151,6 +151,7 @@ test_data=pd.read_csv("test.csv")
 test_data=Dataset.from_pandas(test_data)
 test_token= test_data.map(news_tokenizer, batched=True)
 test_token = test_token.remove_columns(["title","text"])
+test_token = test_token.map(add_task_news)
 test_token.set_format("torch")
 
 print("The Matrix test.csv")
