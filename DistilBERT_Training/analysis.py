@@ -253,7 +253,7 @@ def word_importance(text, model, tokenizer, device):
 
     return sorted(importance, key=lambda x: x[1], reverse=True)
 
-def analyze_wrong_predictions(dataset, wrong_idx, pred, labels, model, tokenizer, device, n=5):
+def analyze_wrong_predictions(dataset, wrong_idx, pred, labels, model, tokenizer, device, n=10):
     print("\nWord Importance Analysis:")
 
     for i in wrong_idx[:n]:
