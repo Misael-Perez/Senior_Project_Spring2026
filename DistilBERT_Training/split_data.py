@@ -5,7 +5,7 @@ import re
 #Should be used in the GPU server
 def remove_artifacts(article):
     if pd.isna(article):
-        return ""
+        return " "
     article= article.replace("’", "'").replace("“", '"').replace("”", '"')
     article= re.sub(r"[\[\]\(\)]", "", article)
     article= re.sub(r"\s[-–—]\s", " ", article)
