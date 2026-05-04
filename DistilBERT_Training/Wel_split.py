@@ -43,3 +43,4 @@ Wel_PT1.to_csv("Wel_PT1.csv", index=False)
 Wel_PT2.to_csv("Wel_PT2.csv", index=False)
 Wel_PT3.to_csv("Wel_PT3.csv",index=False)
 
+print("Finished")
