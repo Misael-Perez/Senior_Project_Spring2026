@@ -7,7 +7,6 @@ def remove_artifacts(article):
     if pd.isna(article):
         return ""
     article= article.replace("’", "'").replace("“", '"').replace("”", '"')
-    article= re.replace("’", "'").replace("“", '"').replace("”", '"')
     article= re.sub(r"[\[\]\(\)]", "", article)
     article= re.sub(r"\s[-–—]\s", " ", article)
     article=re.sub(r"[!?.]{2,}", ".", article)
