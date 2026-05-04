@@ -30,6 +30,12 @@ FakeData["text"] = FakeData["text"].apply(remove_artifacts)
 TrueData["title"] = TrueData["title"].apply(remove_artifacts)
 FakeData["title"] = FakeData["title"].apply(remove_artifacts)
 
+TrueData["text"] = TrueData["text"].astype(str)
+TrueData["title"] = TrueData["title"].astype(str)
+
+FakeData["text"] = FakeData["text"].astype(str)
+FakeData["title"] = FakeData["title"].astype(str)
+
 TrueData["labels"]=True
 FakeData["labels"]=False
 #Merge
@@ -86,6 +92,14 @@ WEL_3_data["text"] = WEL_3_data["text"].apply(remove_artifacts)
 WEL_1_data["title"] = WEL_1_data["title"].apply(remove_artifacts)
 WEL_2_data["title"] = WEL_2_data["title"].apply(remove_artifacts)
 WEL_3_data["title"] = WEL_3_data["title"].apply(remove_artifacts)
+
+WEL_1_data["text"]= WEL_1_data["text"].astype(str)
+WEL_2_data["text"]= WEL_2_data["text"].astype(str)
+WEL_3_data["text"]= WEL_3_data["text"].astype(str)
+
+WEL_1_data["title"]= WEL_1_data["title"].astype(str)
+WEL_2_data["title"]= WEL_2_data["title"].astype(str)
+WEL_3_data["title"]= WEL_3_data["title"].astype(str)
 
 WEL_1_data.to_csv("Wel_PT1.csv", index=False)
 WEL_2_data.to_csv("Wel_PT2.csv", index=False)
