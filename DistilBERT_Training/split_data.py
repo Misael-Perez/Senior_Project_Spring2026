@@ -1,7 +1,21 @@
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
+import re
 
+def remove_artifacts(article):
+    if pd.isna(article):
+        return ""
+    article= article.replace("’", "'").replace("“", '"').replace("”", '"')
+    article= re.replace("’", "'").replace("“", '"').replace("”", '"')
+    article= re.sub(r"[\[\]\(\)]", "", article)
+    article= re.sub(r"\s[-–—]\s", " ", article)
+    article=re.sub(r"[!?.]{2,}", ".", article)
+    article=re.sub(r"\s'\s", " ", article)
+    article=re.sub(r"\s+", " ", article).strip()
+    
+    return article
+    
 
 
 #Start of the preprocessing
@@ -9,9 +23,16 @@ TrueData= pd.read_csv("News_dataset/True.csv")
 FakeData=pd.read_csv("News_dataset/Fake.csv")
 TrueData= TrueData.dropna()
 FakeData= FakeData.dropna()
+
+
+TrueData["text"] = TrueData["text"].apply(remove_artifacts)
+FakeData["text"] = FakeData["text"].apply(remove_artifacts)
+
+TrueData["title"] = TrueData["title"].apply(remove_artifacts)
+FakeData["title"] = FakeData["title"].apply(remove_artifacts)
+
 TrueData["labels"]=True
 FakeData["labels"]=False
-
 #Merge
 officialTable= pd.concat([TrueData,FakeData])
 officialTable=officialTable.reset_index(drop=True)

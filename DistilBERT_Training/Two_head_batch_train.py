@@ -312,11 +312,11 @@ print(testPredictions.metrics)
 
 print("METRICS: ", testPredictions.metrics)
 #print(df.head())
-
+"""
 with open('metrics_single_session.txt', 'w') as f:
     f.write(json.dumps(testPredictions.metrics, indent=4))
 
-"""Now that we have trained the model, we will begin to save. We can't save it the regular way, so
+Now that we have trained the model, we will begin to save. We can't save it the regular way, so
 we have to use the pytorch checkpoint save
 REMINDER: In order to use the model for a test or anywhere else, you have to replicate the architecture of the model
 Which is class above."""
@@ -334,7 +334,7 @@ torch.save({
     "class_weights": class_weights,
     "label_map":label_map,
     "id2label":id2label
-}, "TwoTask_single_session_CPU.pt")
+}, "TwoTask_Model_CPU.pt")
 
 
 
