@@ -97,13 +97,11 @@ def map_labels(labels):
 
 #from this point, we are going to test on a different dataset
 #Let's load our data
-WEL_1_data= pd.read_csv("WEL1/Wel_PT1.csv")
-WEL_2_data=pd.read_csv("WEL2/Wel_PT2.csv")
-WEL_3_data=pd.read_csv("WEL3/Wel_PT3.csv")
+WEL_1_data= pd.read_csv("Wel_PT1.csv")
+WEL_2_data=pd.read_csv("Wel_PT2.csv")
+WEL_3_data=pd.read_csv("Wel_PT3.csv")
 #Invert the labels
-WEL_1_data["labels"] = 1 - WEL_1_data["labels"]
-WEL_2_data["labels"] = 1 - WEL_2_data["labels"]
-WEL_3_data["labels"] = 1 - WEL_3_data["labels"]
+
 Large_Data = pd.concat([WEL_1_data, WEL_2_data], ignore_index=True)
 
 Large_Data=Dataset.from_pandas(Large_Data)

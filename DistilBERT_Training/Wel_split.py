@@ -1,7 +1,7 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
 import re
-
+#this file was used locally to split the large dataset to send to the GPU server. 
 def remove_artifacts(article):
     if pd.isna(article):
         return ""

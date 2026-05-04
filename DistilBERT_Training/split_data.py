@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 import re
-
+#Should be used in the GPU server
 def remove_artifacts(article):
     if pd.isna(article):
         return ""
@@ -68,4 +68,26 @@ test_data["labels"]= test_data["labels"].astype(int)
 train_data.to_csv("train.csv", index=False)
 eval_data.to_csv("eval.csv", index=False)
 test_data.to_csv("test.csv",index=False)
-print("Finished")
+print("Finished Part 1")
+
+WEL_1_data= pd.read_csv("WEL1/Wel_PT1.csv")
+WEL_2_data=pd.read_csv("WEL2/Wel_PT2.csv")
+WEL_3_data=pd.read_csv("WEL3/Wel_PT3.csv")
+#invert to right labels
+WEL_1_data["labels"] = 1 - WEL_1_data["labels"]
+WEL_2_data["labels"] = 1 - WEL_2_data["labels"]
+WEL_3_data["labels"] = 1 - WEL_3_data["labels"]
+
+
+WEL_1_data["text"] = WEL_1_data["text"].apply(remove_artifacts)
+WEL_2_data["text"] = WEL_2_data["text"].apply(remove_artifacts)
+WEL_3_data["text"] = WEL_3_data["text"].apply(remove_artifacts)
+
+WEL_1_data["title"] = WEL_1_data["title"].apply(remove_artifacts)
+WEL_2_data["title"] = WEL_2_data["title"].apply(remove_artifacts)
+WEL_3_data["title"] = WEL_3_data["title"].apply(remove_artifacts)
+
+WEL_1_data.to_csv("Wel_PT1.csv", index=False)
+WEL_2_data.to_csv("Wel_PT2.csv", index=False)
+WEL_3_data.to_csv("Wel_PT3.csv",index=False)
+print("Finished Part 2")
