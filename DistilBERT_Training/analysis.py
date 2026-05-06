@@ -24,7 +24,7 @@ def clean_text(text):
     text = re.sub(r"[^a-z\s]", "", text)  # remove punctuation
     return text
 #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-checkpoint = torch.load("TwoTask_single_session_FT2_CPU.pt", map_location=device)
+checkpoint = torch.load("TwoTask_Model_CPU.pt", map_location=device)
 
 class_weights = checkpoint["class_weights"].to(device)
 class two_TaskModel(nn.Module):
