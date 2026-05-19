@@ -4,8 +4,6 @@ from datasets import Dataset
 from transformers import AutoTokenizer
 from transformers import AutoModelForSequenceClassification
 from transformers import Trainer, TrainingArguments
-import torch
-from transformers import DataCollatorWithPadding
 import pandas as pd
 import numpy as np
 import evaluate
