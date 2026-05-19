@@ -1,9 +1,11 @@
 import torch
 from transformers import (
     AutoTokenizer,
+    #RobertaForSequenceClassification,
     AutoModelForSequenceClassification,
     TrainingArguments,
     Trainer,
+    #DataCollatorWithPadding
 )
 from datasets import load_dataset, load_dataset_builder
 import evaluate
@@ -12,11 +14,15 @@ import pandas as pd
 from sklearn.metrics import accuracy_score, f1_score
 import torch.nn as nn
 import json
+from sklearn.metrics import confusion_matrix
 
 checkpoint="roberta-base"
 tokenizer=AutoTokenizer.from_pretrained(checkpoint)
 
 feverDataset=load_dataset("copenlu/fever_gold_evidence")
+
+#print(feverDataset)
+#print(fever_train_dataset.features)
 
 label_map={
     "SUPPORTS": 0,
@@ -24,44 +30,49 @@ label_map={
     "NOT ENOUGH INFO": 2
 }
 
+id2label= {
+    0: "SUPPORTS",
+    1: "REFUTES",
+    2: "NOT ENOUGH INFO"
+}
+
+label2id= {v: k for k, v in id2label.items()}
+
 def map_labels(labels):
     return {"label": [label_map[m] for m in labels["label"]]}
 
-def tokenization(claims):
+def tokenization(batch):
     evidences=[]
-    for e in claims["evidence"]:
-        if len(e)>0:
-            text=" ".join([ev[2] for ev in e])
+    for i in range(len(batch["claim"])):
+        e=batch["evidence"][i]
+        if (e) and len(e[0])>2:
+            evidences.append(e[0][2])
         else:
-            text=""
-        evidences.append(text)
+            evidences.append("")
 
     return tokenizer(
-        claims["claim"],
+        batch["claim"],
         evidences,
         truncation=True,
         padding="max_length",
-        max_length=512
+        max_length=256
     )
 
-feverDataset=feverDataset.map(tokenization, batched=True)
 feverDataset=feverDataset.map(map_labels, batched=True)
+feverDataset=feverDataset.map(tokenization, batched=True)
+feverDataset=feverDataset.select_columns(["input_ids", "attention_mask", "label"])
+feverDataset=feverDataset.rename_column("label", "labels")
 
 fever_train_dataset=feverDataset["train"]
 fever_validation_dataset=feverDataset["validation"] # will use to evaluate model
 fever_test_dataset=feverDataset["test"] #will use to test the model later
 
-supports_count=fever_train_dataset["label"].count(0)
-refutes_count=fever_train_dataset["label"].count(1)
-nei_count=fever_train_dataset["label"].count(2)
-
-
-fever_train_dataset=fever_train_dataset.select_columns(["input_ids", "attention_mask", "label"])
-
 #Fine-Tuning
 model=AutoModelForSequenceClassification.from_pretrained(
         checkpoint,
         num_labels=3,
+        id2label=id2label,
+        label2id=label2id
         )
 
 accuracy_metric=evaluate.load("accuracy")
@@ -70,7 +81,7 @@ f1_metric= evaluate.load("f1")
 def compute_metrics(eval_preds):
     logits, labels=eval_preds
     predicts=np.argmax(logits, axis=-1)
-    acc=accuracy_metric.compute(predictions=predicts, references=labels)
+    acc=accuracy_metric.compute(predictions=predicts, references=labels)["accuracy"]
     macro_f1=f1_metric.compute(predictions=predicts, references=labels, average="macro")["f1"]    #macro since there are way more "SUPPORTS" then the other 2 labels
     weighted_f1=f1_metric.compute(predictions=predicts, references=labels, average="weighted")["f1"]
     per_class=f1_metric.compute(predictions=predicts, references=labels, average=None )["f1"]
@@ -84,36 +95,41 @@ def compute_metrics(eval_preds):
             }
 
 training_args=TrainingArguments(
-    "test8wWeights",
+    "test9wWeights",
     eval_strategy="steps",
     eval_steps=1000,
-    learning_rate=2e-5,                 
+    learning_rate=2e-5,                 #only chnage when loss seems to chnage weirdly or stays the same
     per_device_train_batch_size=32,
-    per_device_eval_batch_size=256,     
-    num_train_epochs=3,                 
+    #gradient_accumulation_steps=8,
+    per_device_eval_batch_size=256,     #GPU change:increase to 256
+    num_train_epochs=3,                 #GPU change: increase to 5
     weight_decay=0.01,
-    logging_steps=500,   
+    logging_steps=500,   #should probbaly decrease this                   #228 per epoch but no real time logging
     save_strategy="steps",
-    save_steps=1000,                     
+    save_steps=1000,                      #GPU chnage: idecrease to 25
+    #eval_steps #not needed for epoch
+    #warmup_steps=50,
     warmup_ratio=0.1,
     load_best_model_at_end=True,
     metric_for_best_model="macro_f1",
-    greater_is_better=True
+    greater_is_better=True,
+    max_grad_norm=1.0
 )
 
-class_weights=torch.tensor([1.0/supports_count, 1.0/refutes_count, 1.0/nei_count])       #used inverse frequency
+labels= np.array(fever_train_dataset["labels"])
+counts= np.bincount(labels, minlength=3)
+weights= 1.0/ np.sqrt(counts+1e-6)
+weights= weights/weights.min()
+class_weights= torch.tensor(weights, dtype=torch.float)
+
 class myTrainer(Trainer):
     def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
-        labels=inputs.get("labels")
-        outputs=model(**inputs)        
+        labels=inputs["labels"]
+        outputs=model(**inputs)         #model() runs a forward pass so were returns logits, loss(only if labels was passed, hidden_states, and attentions)
         logits=outputs.logits
-        if labels is not None:
-            cross_func = nn.CrossEntropyLoss(weight=class_weights.to(logits.device))
-            loss = cross_func(logits, labels)
-            if loss.dim() != 0:
-                loss = loss.mean()
-        else:
-            loss = torch.tensor(0.0, device=logits.device)
+        #print("labels: ", labels.shape, "logits:", logits.shape)
+        cross_func=nn.CrossEntropyLoss(weight=class_weights.to(logits.device))
+        loss=cross_func(logits, labels)
         return (loss, outputs) if return_outputs else loss
 
 trainer = myTrainer(
@@ -121,15 +137,23 @@ trainer = myTrainer(
     training_args,
     train_dataset=fever_train_dataset,
     eval_dataset=fever_validation_dataset,
-    tokenizer=tokenizer,
+    processing_class=tokenizer,
+    # data_collator=collator, #redundant
     compute_metrics=compute_metrics,
 )
 
 trainer.train()
-trainer.save_model("Model_8")
-tokenizer.save_pretrained("Tokenizer_8")
+trainer.save_model("Model_9")
+trainer.save_model("Model_9")
+tokenizer.save_pretrained("Tokenizer_9")
 
+#Test with test split
 testPredictions=trainer.predict(fever_test_dataset)
+actual=testPredictions.label_ids
+preds=np.argmax(testPredictions.predictions, axis=1)
+
+
+print("***TEST PREDICTIONS***")
 print(dir(testPredictions))
 print(testPredictions.label_ids)
 print("---------------------")
@@ -138,20 +162,28 @@ print("---------------------")
 print(testPredictions.metrics)
 # labels of testPredictions: 'count', 'index', 'label_ids', 'metrics', 'predictions'
 
-actual=testPredictions.label_ids
-preds=np.argmax(testPredictions.predictions, axis=1)
+confusionMatrix=confusion_matrix(actual, preds)
+columnNames = [id2label[0], id2label[1], id2label[2]]
+df_confusionMatrix= pd.DataFrame(
+    confusionMatrix,
+    index=columnNames,
+    columns=columnNames
+)
+print("***CONFUSION MATRIX***")
+print(df_confusionMatrix)
 
-df=pd.DataFrame({
-    "actual": actual,
-    "prediction": preds,
-    "result": (actual==preds)
-    })
-df.to_csv("TestResults_8.csv", index=False)
-print("METRICS: ", testPredictions.metrics)
+
+#df=pd.DataFrame({
+#    "actual": actual,
+#    "prediction": preds,
+#    "result": (actual==preds)
+#    })
+#df.to_csv("TestResults_8.csv", index=False)
+#print("METRICS: ", testPredictions.metrics)
 #print(df.head())
 
-with open('metrics.txt', 'w') as f:
+with open('metrics_Model9.txt', 'w') as f:
     f.write(json.dumps(testPredictions.metrics, indent=4))
 
-#Time took to train: ~8 hours
-                                                                                                                                                                    
+
+
